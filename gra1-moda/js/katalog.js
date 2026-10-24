@@ -4,6 +4,9 @@ import * as W from './katalog-wlosy.js';
 import * as U from './katalog-ubrania.js';
 import * as D from './katalog-dodatki.js';
 import * as S from './katalog-scena.js';
+import * as Z from './katalog-zima-ubrania.js';
+import * as ZD from './katalog-zima-dodatki.js';
+import * as ZS from './katalog-zima-scena.js';
 
 const KOL = ['Kolor', 'Drugi kolor'];
 
@@ -24,26 +27,26 @@ export const KATEGORIE = [
 
   { id: 'fryzura', nazwa: 'Fryzura', ikona: '💇‍♀️', elementy: W.FRYZURY, kolory: ['Włosy', 'Końcówki', 'Gumki'], kadr: '140 10 320 400', rysuj: W.rysujFryzure, paleta: W.KOLORY_WLOSOW },
   { id: 'grzywka', nazwa: 'Grzywka', ikona: '✂️', elementy: W.GRZYWKA, kolory: [], kadr: '214 60 172 150', rysuj: W.rysujGrzywke, uwaga: 'Kolor jak włosy (Fryzura)' },
-  { id: 'nakrycie', nazwa: 'Na głowę', ikona: '👒', elementy: D.NAKRYCIA, kolory: KOL, wzory: true, kadr: '160 -20 280 260', brak: true },
+  { id: 'nakrycie', nazwa: 'Na głowę', ikona: '👒', elementy: [...D.NAKRYCIA, ...ZD.NAKRYCIA_ZIMA], kolory: KOL, wzory: true, kadr: '160 -20 280 260', brak: true },
 
-  { id: 'rajstopy', nazwa: 'Rajstopy', ikona: '🧦', elementy: U.RAJSTOPY, kolory: KOL, wzory: true, kadr: '196 380 208 410', brak: true },
-  { id: 'buty', nazwa: 'Buty', ikona: '👠', elementy: U.BUTY, kolory: KOL, wzory: true, kadr: '226 590 148 200', brak: true },
-  { id: 'dol', nazwa: 'Dół', ikona: '👖', elementy: U.DOLY, kolory: KOL, wzory: true, kadr: '170 380 260 400', brak: true, uwaga: 'Sukienka zakrywa górę i dół' },
-  { id: 'gora', nazwa: 'Góra', ikona: '👚', elementy: U.GORY, kolory: KOL, wzory: true, kadr: '180 250 240 240', brak: true, uwaga: 'Sukienka zakrywa górę i dół' },
-  { id: 'suknia', nazwa: 'Sukienki', ikona: '👗', elementy: U.SUKIENKI, kolory: KOL, wzory: true, kadr: '120 240 360 550', brak: true },
-  { id: 'okrycie', nazwa: 'Okrycia', ikona: '🧥', elementy: U.OKRYCIA, kolory: KOL, wzory: true, kadr: '140 200 320 420', brak: true },
-  { id: 'rekawiczki', nazwa: 'Rękawiczki', ikona: '🧤', elementy: D.REKAWICZKI, kolory: KOL, kadr: '170 380 90 180', brak: true },
+  { id: 'rajstopy', nazwa: 'Rajstopy', ikona: '🧦', elementy: [...U.RAJSTOPY, ...Z.RAJSTOPY_ZIMA], kolory: KOL, wzory: true, kadr: '196 380 208 410', brak: true },
+  { id: 'buty', nazwa: 'Buty', ikona: '👠', elementy: [...U.BUTY, ...Z.BUTY_ZIMA], kolory: KOL, wzory: true, kadr: '226 590 148 200', brak: true },
+  { id: 'dol', nazwa: 'Dół', ikona: '👖', elementy: [...U.DOLY, ...Z.DOLY_ZIMA], kolory: KOL, wzory: true, kadr: '170 380 260 400', brak: true, uwaga: 'Sukienka zakrywa górę i dół' },
+  { id: 'gora', nazwa: 'Góra', ikona: '👚', elementy: [...U.GORY, ...Z.GORY_ZIMA], kolory: KOL, wzory: true, kadr: '180 250 240 240', brak: true, uwaga: 'Sukienka zakrywa górę i dół' },
+  { id: 'suknia', nazwa: 'Sukienki', ikona: '👗', elementy: [...U.SUKIENKI, ...Z.SUKIENKI_ZIMA], kolory: KOL, wzory: true, kadr: '120 240 360 550', brak: true },
+  { id: 'okrycie', nazwa: 'Okrycia', ikona: '🧥', elementy: [...U.OKRYCIA, ...Z.OKRYCIA_ZIMA], kolory: KOL, wzory: true, kadr: '140 200 320 420', brak: true },
+  { id: 'rekawiczki', nazwa: 'Rękawiczki', ikona: '🧤', elementy: [...D.REKAWICZKI, ...ZD.REKAWICZKI_ZIMA], kolory: KOL, kadr: '170 380 90 180', brak: true },
 
-  { id: 'naszyjnik', nazwa: 'Na szyję', ikona: '📿', elementy: D.NASZYJNIKI, kolory: KOL, wzory: true, kadr: '236 236 128 128', brak: true },
-  { id: 'kolczyki', nazwa: 'Kolczyki', ikona: '💎', elementy: D.KOLCZYKI, kolory: ['Kolor'], kadr: '206 160 70 70', brak: true },
-  { id: 'okulary', nazwa: 'Okulary', ikona: '🕶️', elementy: D.OKULARY, kolory: ['Oprawki', 'Szkła'], kadr: '226 136 148 92', brak: true },
-  { id: 'wreka', nazwa: 'W dłoni', ikona: '🪄', elementy: D.WRECE, kolory: KOL, wzory: true, kadr: '110 370 200 280', brak: true },
-  { id: 'skrzydla', nazwa: 'Skrzydła', ikona: '🦋', elementy: D.SKRZYDLA, kolory: KOL, kadr: '110 200 380 300', brak: true },
+  { id: 'naszyjnik', nazwa: 'Na szyję', ikona: '📿', elementy: [...D.NASZYJNIKI, ...ZD.NASZYJNIKI_ZIMA], kolory: KOL, wzory: true, kadr: '236 236 128 128', brak: true },
+  { id: 'kolczyki', nazwa: 'Kolczyki', ikona: '💎', elementy: [...D.KOLCZYKI, ...ZD.KOLCZYKI_ZIMA], kolory: ['Kolor'], kadr: '206 160 70 70', brak: true },
+  { id: 'okulary', nazwa: 'Okulary', ikona: '🕶️', elementy: [...D.OKULARY, ...ZD.OKULARY_ZIMA], kolory: ['Oprawki', 'Szkła'], kadr: '226 136 148 92', brak: true },
+  { id: 'wreka', nazwa: 'W dłoni', ikona: '🪄', elementy: [...D.WRECE, ...ZD.WRECE_ZIMA], kolory: KOL, wzory: true, kadr: '110 370 200 280', brak: true },
+  { id: 'skrzydla', nazwa: 'Skrzydła', ikona: '🦋', elementy: [...D.SKRZYDLA, ...ZD.SKRZYDLA_ZIMA], kolory: KOL, kadr: '110 200 380 300', brak: true },
   { id: 'ogon', nazwa: 'Ogon', ikona: '🐈‍⬛', elementy: D.OGONY, kolory: KOL, kadr: '290 330 200 200', brak: true },
 
-  { id: 'tlo', nazwa: 'Tło', ikona: '🏰', elementy: S.TLA, kolory: [], tlo: true },
-  { id: 'zwierzak', nazwa: 'Zwierzak', ikona: '🐾', elementy: S.ZWIERZAKI, kolory: ['Kolor', 'Drugi kolor'], kadr: '400 600 160 200', brak: true },
-  { id: 'efekty', nazwa: 'Efekty', ikona: '🌟', elementy: S.EFEKTY, kolory: KOL, kadr: '0 0 600 800', brak: true },
+  { id: 'tlo', nazwa: 'Tło', ikona: '🏰', elementy: [S.TLA[0], ...ZS.TLA_ZIMA, ...S.TLA.slice(1)], kolory: [], tlo: true },
+  { id: 'zwierzak', nazwa: 'Zwierzak', ikona: '🐾', elementy: [...S.ZWIERZAKI, ...ZS.ZWIERZAKI_ZIMA], kolory: ['Kolor', 'Drugi kolor'], kadr: '400 600 160 200', brak: true },
+  { id: 'efekty', nazwa: 'Efekty', ikona: '🌟', elementy: [...S.EFEKTY, ...ZS.EFEKTY_ZIMA], kolory: KOL, kadr: '0 0 600 800', brak: true },
 ];
 
 // Wyjątkowe kadry miniatur dla przedmiotów, które wystają poza kadr kategorii.

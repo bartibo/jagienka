@@ -15,8 +15,9 @@ Używaj w ścieżkach linków względnych (`img/obrazek.png`, a nie `/img/obraze
 
 ## Projekty
 
-- [`gra1-moda/`](gra1-moda/) – **Studio Mody**: kreator postaci 2D z przebieraniem (twarz, makijaż, malunki halloweenowe,
-  fryzury z ombre, ubrania z kolorami i wzorami, dodatki, zwierzaki, efekty, tła). Galeria postaci w `localStorage`,
-  eksport PNG z przezroczystym tłem i JPG z tłem, wyzwania z jury i odznaki.
+- [`gra1-moda/`](gra1-moda/) – **Studio Jagienki**: kreator postaci 2D z przebieraniem (twarz, makijaż, malunki,
+  fryzury z ombre, ubrania z kolorami i wzorami, dodatki, zwierzaki, efekty, tła). Wybór pory roku (zima, wiosna, lato,
+  jesień/Halloween) podpowiada stroje, losowanie, wyzwania i jury; zimowa kolekcja leży w `js/katalog-zima-*.js`.
+  Galeria postaci w `localStorage`, eksport PNG z przezroczystym tłem i JPG z tłem, wyzwania z jury i odznaki.
   Postać i ubrania są rysowane kodem jako warstwy SVG (`js/`), tła w `tla/` wygenerowane w Nano Banana 2.1 (Google Gemini).
   Kontrakt rysunków: wszystkie elementy leżą w układzie 600 × 800 wzdłuż punktów ciała z `js/cialo.js`.

@@ -1,8 +1,10 @@
-// Studio Mody – interfejs gry: garderoba, kolory, cofanie, galeria w localStorage, eksport PNG/JPG, wyzwania z jury i odznaki.
+// Studio Jagienki – interfejs gry: garderoba, pory roku, kolory, cofanie, galeria w localStorage, eksport PNG/JPG, wyzwania z jury i odznaki.
 import { rysujPostac, DOMYSLNA, klon, napraw, kolory } from './postac.js';
-import { KATEGORIE, KAT, GRUPY, PALETA, element, kadrElementu, S, W, T } from './katalog.js';
+import { KATEGORIE, KAT, GRUPY, PALETA, element, kadrElementu, W, T } from './katalog.js';
 import { WZORY, Plotno } from './narzedzia.js';
-import { STYLIZACJE, SZAFA, TEMATY, SEDZIOWIE, KOMENTARZE, ODZNAKI, ZESTAWY_KOLOROW } from './dane.js';
+import { STYLIZACJE, SZAFA, TEMATY, SEDZIOWIE, ODZNAKI, ZESTAWY_KOLOROW, SEZONY, SEZON, wSezonie } from './dane.js';
+
+const TLA = KAT.tlo.elementy;
 
 const $ = s => document.querySelector(s);
 const losowy = t => t[Math.floor(Math.random() * t.length)];
@@ -23,8 +25,10 @@ let slot = 0;
 let aktualnyZapis = pamiec.czytaj('aktualny', null);
 let wyzwanie = pamiec.czytaj('wyzwanie', null);
 let dzwiek = pamiec.czytaj('dzwiek', true);
+let sezon = SEZON[pamiec.czytaj('sezon', 'zima')] ? pamiec.czytaj('sezon', 'zima') : 'zima';
+let tylkoSezon = pamiec.czytaj('tylkoSezon', false);
 const historia = [], przyszlosc = [];
-const postep = Object.assign({ zmiany: 0, przymierzone: [], losowania: 0, wyzwania: 0, gwiazdki: 0, odznaki: [], powitanie: false }, pamiec.czytaj('postep', {}));
+const postep = Object.assign({ zmiany: 0, przymierzone: [], losowania: 0, wyzwania: 0, gwiazdki: 0, odznaki: [], powitanie: false, sezony: [] }, pamiec.czytaj('postep', {}));
 
 // Tu kolor należy do osoby, nie do elementu: zmiana fryzury nie przefarbowuje włosów, zmiana oczu nie zmienia tęczówek.
 const ZACHOWAJ = new Set(['oczy', 'brwi', 'rzesy', 'kreska', 'usta', 'fryzura', 'policzki']);
@@ -49,6 +53,8 @@ const graj = {
   straszny: () => { ton(220, 0.4, 'sawtooth', 0.025); ton(233, 0.4, 'sawtooth', 0.02, 0.05); ton(330, 0.5, 'triangle', 0.03, 0.2); },
   fanfara: () => [523, 659, 784, 659, 784, 1046].forEach((f, i) => ton(f, i === 5 ? 0.5 : 0.14, 'square', 0.03, i * 0.12)),
   gwiazdka: i => ton(880 + i * 120, 0.12, 'triangle', 0.04),
+  // dzwoneczki sań: szybkie, wysokie, trochę „brzęczące”
+  dzwonki: () => [1568, 1760, 1568, 2093, 1760, 2349].forEach((f, i) => { ton(f, 0.14, 'triangle', 0.03, i * 0.07); ton(f * 2.01, 0.08, 'sine', 0.012, i * 0.07); }),
 };
 
 /* ---------- zmiany stanu z historią ---------- */
@@ -95,7 +101,7 @@ function ustawWzor(wz) {
 
 /* ---------- scena ---------- */
 function ustawTlo(el, id) {
-  const t = S.TLA.find(x => x.id === id) || S.TLA[0];
+  const t = TLA.find(x => x.id === id) || TLA[0];
   el.classList.toggle('szachownica', !t.obraz && !t.css);
   el.style.background = '';
   if (t.obraz) el.style.backgroundImage = `url(tla/${t.obraz}.jpg)`;
@@ -142,6 +148,9 @@ function miniatura(k, el) {
   const stary = stan.w[k.id];
   t.w[k.id] = ZACHOWAJ.has(k.id) && stary?.k ? { id: el.id, k: stary.k, wz: stary.wz } : (stary?.id === el.id ? stary : { id: el.id, k: el.k, wz: el.wz || 'gladki' });
   if (k.id === 'gora' || k.id === 'dol') t.w.suknia = { id: 'brak' };
+  // śnieg i zwierzak ze sceny tylko zaśmiecałyby małe obrazki
+  if (k.id !== 'efekty') t.w.efekty = { id: 'brak' };
+  if (k.id !== 'zwierzak') t.w.zwierzak = { id: 'brak' };
   if (k.id === 'efekty') return `<div class="mini ciemne">${rysujPostac(t, { pref, tylkoKat: 'efekty', pelny: false, kadr: '60 60 480 480' })}</div>`;
   if (k.id === 'zwierzak') return `<div class="mini">${rysujPostac(t, { pref, tylkoKat: 'zwierzak', pelny: false, kadr: kadrElementu(k, el) })}</div>`;
   // Zakrywające rzeczy zdejmujemy z miniatur, żeby było widać to, co się wybiera.
@@ -155,11 +164,21 @@ function miniatura(k, el) {
 function rysujElementy() {
   const k = KAT[kat];
   const w = stan.w[kat] || { id: 'brak' };
-  const lista = (k.brak ? [{ id: 'brak', nazwa: 'Bez' }] : []).concat(k.elementy);
+  // rzeczy z wybranej pory roku idą na początek (albo zostają same, gdy włączony filtr)
+  const sez = SEZON[sezon];
+  // „Bez” dokładamy sami, więc pomijamy elementy „brak” z katalogu (cienie miały go podwójnie)
+  const wszystkie = k.brak ? k.elementy.filter(el => el.id !== 'brak') : k.elementy;
+  const zSezonu = wszystkie.filter(el => wSezonie(el, sezon));
+  const reszta = wszystkie.filter(el => !wSezonie(el, sezon));
+  const filtr = tylkoSezon && zSezonu.length > 0;
+  const lista = (k.brak ? [{ id: 'brak', nazwa: 'Bez' }] : []).concat(zSezonu, filtr ? [] : reszta);
+  $('#filtr').hidden = !zSezonu.length || zSezonu.length === wszystkie.length;
+  $('#filtr').innerHTML = `<button data-akcja="filtr" class="${tylkoSezon ? 'akt' : ''}">${sez.emoji} ${tylkoSezon ? `Tylko ${sez.nazwa.toLowerCase()} (${zSezonu.length})` : `Najpierw ${sez.nazwa.toLowerCase()} · pokaż tylko te (${zSezonu.length})`}</button>` +
+    (tylkoSezon ? `<button data-akcja="filtr">Pokaż wszystko (${wszystkie.length})</button>` : '');
   licznikMini = 0;
   $('#elementy').innerHTML = lista.map(el => {
-    const halloween = el.tagi?.includes('halloween') ? '<span class="znaczek" title="Halloween">🎃</span>' : '';
-    return `<button class="element${el.id === w.id ? ' akt' : ''}" data-el="${el.id}" title="${el.nazwa}">${miniatura(k, el)}${halloween}<span class="nazwa">${el.nazwa}</span></button>`;
+    const znak = wSezonie(el, sezon) ? `<span class="znaczek" title="${sez.nazwa}">${sez.emoji}</span>` : '';
+    return `<button class="element${el.id === w.id ? ' akt' : ''}" data-el="${el.id}" title="${el.nazwa}">${miniatura(k, el)}${znak}<span class="nazwa">${el.nazwa}</span></button>`;
   }).join('');
   const uwaga = k.uwaga && !(kat === 'dol' || kat === 'gora') ? k.uwaga : ((kat === 'gora' || kat === 'dol') && stan.w.suknia?.id !== 'brak' ? '👗 Teraz masz sukienkę – wybierz górę albo dół, a sukienka się zdejmie.' : k.uwaga && kat === 'grzywka' ? k.uwaga : '');
   $('#uwaga').hidden = !uwaga;
@@ -201,21 +220,23 @@ function rysujPanel() {
 }
 
 /* ---------- losowanie ---------- */
-const HALLOWEEN_KOLORY = [['#1b1020', '#ff8a1f', '#7b2cbf'], ['#3b2a5a', '#5fd068', '#ff8a1f'], ['#5c0a1e', '#1b1020', '#ffd23f'], ['#2b1d3a', '#c77dff', '#ff8fc7'], ['#ff8a1f', '#1b1020', '#5fd068']];
 const NATURALNE_WLOSY = W.KOLORY_WLOSOW.slice(0, 9);
 const TECZOWKI = ['#5b8def', '#2ec4b6', '#5fd068', '#8b5a2b', '#3b2418', '#8b5cf6', '#c77dff', '#ff5d8f', '#4cc9f0', '#7a7a8a'];
 const SZMINKI = ['#e8848f', '#ff5d8f', '#c1121f', '#ff8fb1', '#c13ad6', '#5c0a1e', '#ff7a3d'];
 
-function losuj(halloween = false) {
-  const zestaw = losowy(halloween ? HALLOWEEN_KOLORY : ZESTAWY_KOLOROW);
+// Losowanie: bez pory roku – z całej szafy; z porą roku – głównie rzeczy z tej pory, w jej kolorach.
+function losuj(pora = null) {
+  const sez = SEZON[pora];
+  const halloween = pora === 'jesien', zima = pora === 'zima';
+  const zestaw = losowy(sez ? sez.kolory : ZESTAWY_KOLOROW);
   const zElem = (katId, warunek = () => true) => {
     const wszystkie = KAT[katId].elementy.filter(warunek);
-    const hal = wszystkie.filter(e => e.tagi?.includes('halloween'));
-    return losowy(halloween && hal.length && szansa(0.85) ? hal : wszystkie);
+    const sezonowe = wszystkie.filter(e => wSezonie(e, pora));
+    return losowy(sez && sezonowe.length && szansa(0.85) ? sezonowe : wszystkie);
   };
   const ubierz = (s, katId, el, kolor = true) => {
     const nowe = { id: el.id, k: el.k ? el.k.slice() : undefined, wz: el.wz || 'gladki' };
-    if (kolor && nowe.k && !(halloween && szansa(0.6))) {
+    if (kolor && nowe.k && !(sez && szansa(0.6))) {
       const przes = Math.floor(Math.random() * 3);
       nowe.k = nowe.k.map((c, i) => zestaw[(i + przes) % 3]);
       if (szansa(0.22)) nowe.wz = losowy(WZORY.slice(1, 15)).id;
@@ -227,32 +248,36 @@ function losuj(halloween = false) {
     // Fantastyczna skóra tylko czasem w Halloween; poza tym wraca ludzki odcień (inaczej „duszek” zostawał na zawsze).
     const ludzkie = T.SKORA.filter(x => !x.tagi.length);
     if (halloween && szansa(0.3)) { const sk = losowy(T.SKORA.filter(x => x.tagi.includes('halloween'))); s.w.skora = { id: sk.id, k: sk.k.slice() }; }
+    else if (sez?.skora && !halloween && szansa(0.08)) { const sk = T.SKORA.find(x => x.id === sez.skora); s.w.skora = { id: sk.id, k: sk.k.slice() }; }
     else if (!ludzkie.some(x => x.id === s.w.skora?.id)) { const sk = losowy(ludzkie); s.w.skora = { id: sk.id, k: sk.k.slice() }; }
-    s.w.oczy = { id: losowy(halloween ? ['duze', 'kocie', 'anime', 'swiecace', 'spirale', 'migdalowe'] : ['duze', 'anime', 'migdalowe', 'kocie', 'gwiazdki', 'serduszka', 'mrugniecie', 'senne']), k: [losowy(TECZOWKI)] };
+    s.w.oczy = { id: losowy(halloween ? ['duze', 'kocie', 'anime', 'swiecace', 'spirale', 'migdalowe'] : zima ? ['duze', 'blyszczace', 'lalka', 'lodowe', 'anime', 'gwiazdki'] : ['duze', 'blyszczace', 'lalka', 'anime', 'migdalowe', 'kocie', 'gwiazdki', 'serduszka', 'mrugniecie']), k: [losowy(TECZOWKI)] };
     s.w.brwi = { id: losowy(['naturalne', 'luk', 'proste', 'cienkie', 'grube']), k: s.w.brwi?.k || ['#5a3726'] };
     s.w.usta = { id: losowy(halloween ? ['kly', 'usmieszek', 'koci', 'usmiech', 'szeroki', 'jezyk'] : ['usmiech', 'szeroki', 'buziak', 'jezyk', 'usmieszek', 'spokojna']), k: [halloween ? losowy(['#5c0a1e', '#1b1020', '#7b2cbf', '#c1121f']) : losowy(SZMINKI)] };
-    s.w.policzki = { id: losowy(['rumience', 'rumience', 'piegi', 'oba', 'serduszka', 'brak']), k: ['#ff8fa8', '#b0705a'] };
+    const pol = losowy(zima ? ['mroz', 'mroz', 'rumience', 'oba', 'piegi'] : ['rumience', 'rumience', 'piegi', 'oba', 'serduszka', 'brak']);
+    s.w.policzki = { id: pol, k: pol === 'mroz' ? ['#ff5d7a', '#ffffff'] : ['#ff8fa8', '#b0705a'] };
     moze(s, 'cienie', 0.55, e => e.id !== 'brak');
     s.w.kreska = szansa(0.5) ? { id: losowy(['cienka', 'skrzydelko', 'kocia', 'graficzna']), k: ['#1b1020'] } : { id: 'brak' };
     s.w.rzesy = { id: losowy(['naturalne', 'dlugie', 'dramatyczne']), k: ['#2a1a2e'] };
+    s.w.nos = { id: zima && szansa(0.12) ? 'renifer' : losowy(['zgrabny', 'zgrabny', 'kropka', 'guziczek']), k: ['#e5383b'] };
     if (halloween) moze(s, 'malunki', 0.9, e => e.tagi?.includes('halloween'));
+    else if (sez) moze(s, 'malunki', 0.35, e => wSezonie(e, pora));
     else moze(s, 'malunki', 0.2, e => ['gwiazdki', 'serca', 'brokat'].includes(e.id));
     const f = losowy(W.FRYZURY), wlosy = szansa(0.6) ? losowy(NATURALNE_WLOSY) : losowy(W.KOLORY_WLOSOW);
     s.w.fryzura = { id: f.id, k: [wlosy, szansa(0.3) ? losowy(W.KOLORY_WLOSOW) : wlosy, zestaw[2]] };
     s.w.grzywka = { id: losowy(W.GRZYWKA).id };
-    moze(s, 'nakrycie', halloween ? 0.9 : 0.5);
+    moze(s, 'nakrycie', halloween || zima ? 0.85 : 0.5);
     if (szansa(halloween ? 0.6 : 0.4)) { ubierz(s, 'suknia', zElem('suknia')); s.w.gora = { id: 'brak' }; s.w.dol = { id: 'brak' }; }
     else { s.w.suknia = { id: 'brak' }; ubierz(s, 'gora', zElem('gora')); ubierz(s, 'dol', zElem('dol')); }
-    moze(s, 'okrycie', halloween ? 0.4 : 0.25);
-    moze(s, 'rajstopy', halloween ? 0.6 : 0.35);
+    moze(s, 'okrycie', zima ? 0.55 : halloween ? 0.4 : 0.25);
+    moze(s, 'rajstopy', zima ? 0.75 : halloween ? 0.6 : 0.35);
     moze(s, 'buty', 0.95);
-    moze(s, 'naszyjnik', 0.4); moze(s, 'kolczyki', 0.4); moze(s, 'okulary', 0.12);
-    moze(s, 'rekawiczki', 0.15); moze(s, 'wreka', halloween ? 0.7 : 0.4);
+    moze(s, 'naszyjnik', zima ? 0.6 : 0.4); moze(s, 'kolczyki', 0.4); moze(s, 'okulary', 0.12);
+    moze(s, 'rekawiczki', zima ? 0.45 : 0.15); moze(s, 'wreka', sez ? 0.7 : 0.4);
     moze(s, 'skrzydla', halloween ? 0.35 : 0.15); moze(s, 'ogon', halloween ? 0.3 : 0.05);
-    moze(s, 'zwierzak', halloween ? 0.6 : 0.35); moze(s, 'efekty', halloween ? 0.6 : 0.4);
-    const tla = S.TLA.filter(t => t.obraz && (!halloween || t.tagi?.includes('halloween')));
-    s.w.tlo = { id: losowy(tla).id };
-  }, { dzw: halloween ? 'straszny' : 'magia' });
+    moze(s, 'zwierzak', sez ? 0.6 : 0.35); moze(s, 'efekty', sez ? 0.6 : 0.4);
+    const tla = TLA.filter(t => t.obraz && (!sez || wSezonie(t, pora)));
+    s.w.tlo = { id: losowy(tla.length ? tla : TLA.filter(t => t.obraz)).id };
+  }, { dzw: sez ? sez.dzw : 'magia' });
   postep.losowania++;
   rysujPanel();
 }
@@ -286,13 +311,16 @@ function dymek(t) {
 }
 
 function pokazPomysly() {
-  const karty = STYLIZACJE.map((st, i) => {
+  // najpierw stylizacje z wybranej pory roku
+  const kolejnosc = STYLIZACJE.map((st, i) => [st, i]).sort((a, b) => (b[0].sezon === sezon) - (a[0].sezon === sezon));
+  const karty = kolejnosc.map(([st, i]) => {
     const t = klon(stan);
     for (const k of SZAFA) t.w[k] = { id: 'brak' };
     for (const [k, v] of Object.entries(st.w)) { const el = element(k, v.id); t.w[k] = { id: v.id, k: v.k || el?.k, wz: v.wz || el?.wz }; }
-    const tl = S.TLA.find(x => x.id === t.w.tlo?.id);
+    const tl = TLA.find(x => x.id === t.w.tlo?.id);
     const tloCss = tl?.obraz ? `background-image:url(tla/${tl.obraz}.jpg)` : (tl?.css ? `background:${tl.css}` : '');
-    return `<button class="karta" data-styl="${i}"><div class="obr" style="${tloCss}">${rysujPostac(t, { pref: 'st' + i + '_' })}</div><div class="opis">${st.emoji} ${st.nazwa}</div></button>`;
+    const znak = st.sezon ? `<span class="znaczek">${SEZON[st.sezon].emoji}</span>` : '';
+    return `<button class="karta" data-styl="${i}"><div class="obr" style="${tloCss}">${rysujPostac(t, { pref: 'st' + i + '_' })}${znak}</div><div class="opis">${st.emoji} ${st.nazwa}</div></button>`;
   }).join('');
   otworz(`<h2>💡 Pomysły na postać</h2><p class="pod">Kliknij stylizację – twoja postać się przebierze, a potem możesz wszystko zmieniać po swojemu.</p><div class="karty">${karty}</div>`);
 }
@@ -302,7 +330,7 @@ function zaladuj(src) {
   return new Promise((ok, zle) => { const i = new Image(); i.onload = () => ok(i); i.onerror = zle; i.src = src; });
 }
 async function rysujTloNaPlotnie(g, szer, wys, id) {
-  const t = S.TLA.find(x => x.id === id) || S.TLA[0];
+  const t = TLA.find(x => x.id === id) || TLA[0];
   if (t.obraz) {
     const img = await zaladuj(`tla/${t.obraz}.jpg`);
     const sk = Math.max(szer / img.width, wys / img.height);
@@ -428,18 +456,21 @@ function ocena(s, temat) {
   const makijaz = ['cienie', 'kreska', 'malunki'].filter(k => s.w[k] && s.w[k].id !== 'brak').length;
   const ogr = v => Math.max(1, Math.min(5, Math.round(v)));
   return {
-    mruczka: ogr(1 + pkt / 3.2),
-    bubu: ogr(1.6 + (barwy.size >= 4) + (barwy.size >= 7) + Math.min(1.4, wzory.size * 0.8) + (s.w.efekty?.id !== 'brak' ? 0.6 : 0) + (S.TLA.find(t => t.id === s.w.tlo?.id)?.obraz ? 0.4 : 0)),
-    dynia: ogr(1.2 + dodatki * 0.6 + makijaz * 0.6),
+    temat: ogr(1 + pkt / 3.2),
+    kolory: ogr(1.6 + (barwy.size >= 4) + (barwy.size >= 7) + Math.min(1.4, wzory.size * 0.8) + (s.w.efekty?.id !== 'brak' ? 0.6 : 0) + (TLA.find(t => t.id === s.w.tlo?.id)?.obraz ? 0.4 : 0)),
+    dodatki: ogr(1.2 + dodatki * 0.6 + makijaz * 0.6),
   };
 }
 function najlepszyTemat(s) {
   return TEMATY.map(t => [t, punktyTematu(s, t)]).sort((a, b) => b[1] - a[1])[0][0];
 }
 
+const juryDla = temat => SEDZIOWIE[temat?.sezon] || SEDZIOWIE[sezon] || SEDZIOWIE.zima;
 function pokazWyzwanie(temat) {
-  temat ||= losowy(szansa(0.55) ? TEMATY.filter(t => t.halloween) : TEMATY);
-  otworz(`<h2>🏆 Wyzwanie</h2><p class="pod">Ubierz postać w temacie, a potem pokaż ją jury: Kotce Mruczce, Duszkowi Bubu i Pani Dyni!</p>
+  const sezonowe = TEMATY.filter(t => t.sezon === sezon);
+  temat ||= losowy(sezonowe.length && szansa(0.7) ? sezonowe : TEMATY);
+  const j = juryDla(temat);
+  otworz(`<h2>🏆 Wyzwanie</h2><p class="pod">Ubierz postać w temacie, a potem pokaż ją jury: ${j.map(x => `${x.emoji} ${x.imie}`).join(', ')}!</p>
     <div class="temat"><div class="e">${temat.emoji}</div><h3>${temat.nazwa}</h3><p>${temat.opis}</p></div>
     <div class="rzad"><button class="przycisk" data-temat-inny="1"><b>🔄</b>Inny temat</button><button class="przycisk zloty" data-temat-start="${temat.id}"><b>✨</b>Zaczynam!</button></div>`);
 }
@@ -453,23 +484,25 @@ function rysujPasekWyzwania() {
 function pokazJury() {
   const temat = TEMATY.find(x => x.id === wyzwanie) || najlepszyTemat(stan);
   const o = ocena(stan, temat);
-  const suma = o.mruczka + o.bubu + o.dynia;
+  const suma = o.temat + o.kolory + o.dodatki;
+  const jury = juryDla(temat);
   $('#scena').classList.remove('pokaz'); void $('#scena').offsetWidth; $('#scena').classList.add('pokaz');
   graj.fanfara();
   const gw = n => '<b>★</b>'.repeat(n) + '★'.repeat(5 - n);
-  const sedziowie = SEDZIOWIE.map((sd, i) => `<div class="sedzia" style="animation-delay:${0.3 + i * 0.5}s"><div class="e">${sd.emoji}</div><h4>${sd.imie}</h4><small>ocenia: ${sd.co}</small><div class="gw">${gw(o[sd.id])}</div><p>„${KOMENTARZE[sd.id][o[sd.id] - 1]}”</p></div>`).join('');
+  const sedziowie = jury.map((sd, i) => `<div class="sedzia" style="animation-delay:${0.3 + i * 0.5}s"><div class="e">${sd.emoji}</div><h4>${sd.imie}</h4><small>ocenia: ${sd.co}</small><div class="gw">${gw(o[sd.rola])}</div><p>„${sd.komentarze[o[sd.rola] - 1]}”</p></div>`).join('');
   const werdykt = suma >= 14 ? 'Mistrzostwo świata! 👑' : suma >= 12 ? 'Rewelacja! 🌟' : suma >= 9 ? 'Super stylizacja! 💖' : suma >= 6 ? 'Dobry początek! 🙂' : 'Spróbuj dodać więcej z tematu! 💪';
   const opisTematu = wyzwanie ? `Temat: <b>${temat.emoji} ${temat.nazwa}</b>` : `Jury uznało, że to stylizacja w stylu: <b>${temat.emoji} ${temat.nazwa}</b>`;
   otworz(`<h2>⭐ Pokaz przed jury</h2><p class="pod">${opisTematu}</p><div class="jury">${sedziowie}</div>
     <div class="suma">${werdykt}<br><span class="duza">${suma}</span> / 15 gwiazdek</div>
     <div class="rzad"><button class="przycisk" data-akcja="zapisz"><b>💾</b>Zapisz postać</button><button class="przycisk zloty" data-akcja="wyzwanie"><b>🏆</b>Nowe wyzwanie</button></div>`);
-  [0, 1, 2].forEach(i => setTimeout(() => { for (let j = 0; j < o[SEDZIOWIE[i].id]; j++) setTimeout(() => graj.gwiazdka(j), j * 70); }, 600 + i * 500));
+  jury.forEach((sd, i) => setTimeout(() => { for (let j = 0; j < o[sd.rola]; j++) setTimeout(() => graj.gwiazdka(j), j * 70); }, 600 + i * 500));
   setTimeout(() => { if (suma >= 11) konfetti(suma >= 14 ? 220 : 120); }, 2000);
   postep.jury = true;
   postep.gwiazdki = Math.max(postep.gwiazdki, suma);
   if (wyzwanie) {
     postep.wyzwania++;
-    if (temat.halloween && suma >= 13) postep.halloween = true;
+    if (temat.sezon === 'jesien' && suma >= 13) postep.halloween = true;
+    if (temat.sezon === 'zima' && suma >= 13) postep.zima = true;
   }
   pamiec.zapisz('postep', postep);
   setTimeout(sprawdzOdznaki, 2300);
@@ -496,6 +529,14 @@ function zdobyte(s) {
     gwiazda: postep.gwiazdki >= 15,
     halloween: !!postep.halloween,
     mistrzyni: postep.wyzwania >= 5,
+    krolowaSniegu: w.nakrycie?.id === 'koronaLodowa' && w.suknia?.id === 'krolowaSniegu',
+    lyzwiarka: w.buty?.id === 'lyzwy' && w.suknia?.id === 'lyzwiarka',
+    mikolaj: w.nakrycie?.id === 'mikolaj' && w.wreka?.id === 'prezent',
+    cieplutko: jest('nakrycie') && wSezonie(element('nakrycie', w.nakrycie.id), 'zima') && ['szalik', 'szalikDlugi', 'komin'].includes(w.naszyjnik?.id) && jest('rekawiczki'),
+    balwan: w.zwierzak?.id === 'balwan' && w.wreka?.id === 'sniezka',
+    zimowaSzafa: postep.przymierzone.filter(x => { const [k, id] = x.split(':'); return wSezonie(element(k, id), 'zima'); }).length >= 30,
+    zima: !!postep.zima,
+    pory: postep.sezony.length >= 4,
   };
 }
 function sprawdzOdznaki() {
@@ -530,18 +571,53 @@ function konfetti(ile = 120) {
   konfetti.raf = requestAnimationFrame(krok);
 }
 
+/* ---------- pory roku ---------- */
+function ustawSezon(id, { cicho = false } = {}) {
+  sezon = id;
+  pamiec.zapisz('sezon', sezon);
+  if (!postep.sezony.includes(id)) postep.sezony.push(id);
+  pamiec.zapisz('postep', postep);
+  const sez = SEZON[sezon];
+  document.body.dataset.sezon = sezon;
+  $('#przycisk-sezonu').innerHTML = `<b>${sez.emoji}</b><span>${sez.nazwa}</span>`;
+  $('#los-sezonu').innerHTML = `<b>${sez.id === 'jesien' ? '🎃' : '🎲'}</b><span>${sez.los}</span>`;
+  $('#los-sezonu').title = `Wylosuj: ${sez.los.toLowerCase()}`;
+  dekoracje();
+  rysujPanel();
+  if (!cicho) { dymek(`${sez.emoji} ${sez.nazwa}! ${sez.opis}.`); graj[sez.dzw]?.(); sprawdzOdznaki(); }
+}
+function pokazPory() {
+  const karty = SEZONY.map(z => `<button class="pora${z.id === sezon ? ' akt' : ''}" data-sezon="${z.id}" style="background-image:linear-gradient(#0000 40%,#1d0f33dd),url(tla/${TLA.find(t => t.id === z.tlo)?.obraz}.jpg)"><span class="e">${z.emoji}</span><b>${z.nazwa}</b><small>${z.opis}</small></button>`).join('');
+  otworz(`<h2>🗓️ Pora roku</h2><p class="pod">Pora roku podpowiada stroje (mają jej znaczek i stoją na początku), losuje w jej stylu i wybiera wyzwania. Wszystkie rzeczy zostają w szafie!</p><div class="pory">${karty}</div>`);
+}
+// Spadające płatki (zima), płatki kwiatów (wiosna), liście (jesień) – tylko ozdoba w tle strony.
+function dekoracje() {
+  const box = $('#dekoracje');
+  const znaki = { zima: ['❄', '❅', '❆', '•'], wiosna: ['🌸', '•'], lato: ['✦', '•'], jesien: ['🍂', '🍁', '•'] }[sezon] || [];
+  box.innerHTML = Array.from({ length: 22 }, (_, i) => `<i style="left:${(i * 4.6 + Math.random() * 4).toFixed(1)}%;animation-duration:${(9 + Math.random() * 10).toFixed(1)}s;animation-delay:-${(Math.random() * 18).toFixed(1)}s;font-size:${(10 + Math.random() * 14).toFixed(0)}px">${znaki[i % znaki.length]}</i>`).join('');
+}
+
 /* ---------- powitanie ---------- */
 function powitanie() {
-  otworz(`<div class="temat"><div class="e">👗</div><h3>Witaj w Studiu Mody!</h3><p>Stwórz własną postać: wybierz buzię, fryzurę, makijaż i stroje.<br>Zapisuj ją w Galerii, pobieraj jako obrazek i zdobywaj odznaki w wyzwaniach!</p></div>
-    <div class="rzad" style="justify-content:center"><button class="przycisk dyniowy" data-akcja="halloween"><b>🎃</b>Przebranie na Halloween</button><button class="przycisk mocny" data-akcja="pomysly"><b>💡</b>Gotowe pomysły</button><button class="przycisk" data-zamknij><b>✨</b>Zaczynam od zera</button></div>`);
-  postep.powitanie = true; pamiec.zapisz('postep', postep);
+  otworz(`<div class="temat"><div class="e">❄️👗</div><h3>Witaj w Studiu Jagienki!</h3><p>Stwórz własną postać: wybierz buzię, fryzurę, makijaż i stroje.<br>Teraz jest <b>zima</b>: łyżwy, Święta, Królowa Śniegu i mnóstwo ciepłych ubrań!<br>Zapisuj postacie w Galerii, pobieraj jako obrazek i zdobywaj odznaki w wyzwaniach.</p></div>
+    <div class="rzad" style="justify-content:center"><button class="przycisk zimowy" data-akcja="sezonowe"><b>❄️</b>Zimowy strój</button><button class="przycisk mocny" data-akcja="pomysly"><b>💡</b>Gotowe pomysły</button><button class="przycisk" data-zamknij><b>✨</b>Zaczynam od zera</button></div>`);
+  postep.powitanie = true; postep.nowoscZima = true; pamiec.zapisz('postep', postep);
+}
+// Dla tych, które grały już wcześniej: raz pokazujemy, co nowego.
+function nowoscZima() {
+  otworz(`<div class="temat"><div class="e">❄️⛸️🎄</div><h3>Nowość: zimowa kolekcja!</h3><p>Ponad sto zimowych rzeczy: kurtki, swetry, czapki, łyżwy, suknia Królowej Śniegu, stroje Mikołajki i elfa, bałwanki, pingwiny i nowe tła.<br>Postać ma też śliczniejsze oczy, buzię i włosy. A u góry wybierzesz <b>porę roku</b>.</p></div>
+    <div class="rzad" style="justify-content:center"><button class="przycisk zimowy" data-akcja="sezonowe"><b>❄️</b>Zimowy strój</button><button class="przycisk mocny" data-akcja="pomysly"><b>💡</b>Zimowe pomysły</button><button class="przycisk" data-zamknij><b>✨</b>Dzięki!</button></div>`);
+  postep.nowoscZima = true; pamiec.zapisz('postep', postep);
 }
 
 /* ---------- zdarzenia ---------- */
 const AKCJE = {
   pomysly: pokazPomysly,
-  losuj: () => { zamknij(); losuj(false); },
-  halloween: () => { zamknij(); losuj(true); },
+  losuj: () => { zamknij(); losuj(null); },
+  sezonowe: () => { zamknij(); losuj(sezon); },
+  halloween: () => { zamknij(); losuj('jesien'); },
+  pory: pokazPory,
+  filtr: () => { tylkoSezon = !tylkoSezon; pamiec.zapisz('tylkoSezon', tylkoSezon); rysujElementy(); graj.klik(); },
   cofnij, ponow,
   dzwiek: () => { dzwiek = !dzwiek; pamiec.zapisz('dzwiek', dzwiek); $('#ikona-dzwieku').textContent = dzwiek ? '🔊' : '🔇'; graj.klik(); },
   zapisz: oknoZapisu,
@@ -584,6 +660,8 @@ document.addEventListener('click', e => {
   const us = e.target.closest('[data-usun]');
   if (us) { usun(us.dataset.usun); return; }
   if (e.target.closest('[data-temat-inny]')) { pokazWyzwanie(); graj.klik(); return; }
+  const sz = e.target.closest('[data-sezon]');
+  if (sz) { zamknij(); ustawSezon(sz.dataset.sezon); return; }
   const ts = e.target.closest('[data-temat-start]');
   if (ts) { wyzwanie = ts.dataset.tematStart; pamiec.zapisz('wyzwanie', wyzwanie); rysujPasekWyzwania(); zamknij(); graj.magia(); dymek('Do dzieła! Kiedy skończysz – kliknij ⭐ Jury!'); }
 });
@@ -607,8 +685,9 @@ document.addEventListener('keydown', e => {
 /* ---------- start ---------- */
 $('#ikona-dzwieku').textContent = dzwiek ? '🔊' : '🔇';
 rysujPasekWyzwania();
-rysujPanel();
+ustawSezon(sezon, { cicho: true });
 odswiez();
 if (!postep.powitanie) powitanie();
+else if (!postep.nowoscZima) nowoscZima();
 // do testów i zrzutów ekranu
-window.studio = { get stan() { return stan; }, losuj, zastosujStylizacje, STYLIZACJE, wybierz, pokazJury, pokazGalerie, pokazPomysly, obrazPostaci, ustawKat: (g, k) => { grupa = g; kat = k; rysujPanel(); } };
+window.studio = { get stan() { return stan; }, losuj, ustawSezon, pokazPory, zastosujStylizacje, STYLIZACJE, wybierz, pokazJury, pokazGalerie, pokazPomysly, obrazPostaci, ustawKat: (g, k) => { grupa = g; kat = k; rysujPanel(); } };

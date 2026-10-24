@@ -232,3 +232,15 @@ export class Plotno {
       (cien ? `<path d="${d}" fill="${this.cien}" pointer-events="none"/>` : '');
   }
 }
+
+// Śnieżynka: sześć ramion z gałązkami – ścieżka do obrysowania (stroke), nie do wypełnienia.
+export function sniezynkaD(cx, cy, r) {
+  let d = '';
+  for (let i = 0; i < 6; i++) {
+    const k = i * Math.PI / 3 - Math.PI / 2, c = Math.cos(k), s = Math.sin(k);
+    d += `M${cx} ${cy}L${(cx + c * r).toFixed(1)} ${(cy + s * r).toFixed(1)}`;
+    const bx = cx + c * r * 0.58, by = cy + s * r * 0.58, g = r * 0.32;
+    for (const z of [-1, 1]) d += `M${bx.toFixed(1)} ${by.toFixed(1)}L${(bx + Math.cos(k + z * 0.8) * g).toFixed(1)} ${(by + Math.sin(k + z * 0.8) * g).toFixed(1)}`;
+  }
+  return d;
+}

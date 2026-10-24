@@ -69,7 +69,7 @@ export const ZWIERZAKI = [
 ];
 
 /* ---------- EFEKTY ---------- */
-function rozsyp(ziarno, n, f, { y0 = 20, y1 = 780, omin = true } = {}) {
+export function rozsyp(ziarno, n, f, { y0 = 20, y1 = 780, omin = true } = {}) {
   const r = losowe(ziarno);
   let s = '';
   for (let i = 0; i < n; i++) {
@@ -123,7 +123,7 @@ export const TLA = [
   { id: 'podwodny', nazwa: 'Podwodne królestwo', obraz: 'podwodny', tagi: ['syrena'] },
   { id: 'las-wrozek', nazwa: 'Las wróżek', obraz: 'las-wrozek', tagi: ['wrozka', 'las'] },
   { id: 'kraina-slodyczy', nazwa: 'Kraina słodyczy', obraz: 'kraina-slodyczy', tagi: ['slodka', 'cukierki'] },
-  { id: 'zima', nazwa: 'Zimowa kraina', obraz: 'zima', tagi: ['zima'] },
+  { id: 'zima', nazwa: 'Zimowa kraina', obraz: 'zima', tagi: ['zima', 'snieg', 'lyzwy'] },
   { id: 'kosmos', nazwa: 'Kosmos', obraz: 'kosmos', tagi: ['kosmos', 'gwiazda'] },
   { id: 'roz', nazwa: 'Różowy', css: 'linear-gradient(160deg,#ffd6ec,#ffb3d9 60%,#e9a5ff)', kolory: ['#ffd6ec', '#e9a5ff'] },
   { id: 'noc', nazwa: 'Halloweenowa noc', css: 'linear-gradient(180deg,#1b1238,#4a1f6e 60%,#ff7a2a)', kolory: ['#1b1238', '#ff7a2a'], tagi: ['halloween'] },

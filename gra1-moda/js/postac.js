@@ -5,7 +5,7 @@ import { cialo, ramiona, glowa, dlonie, bielizna } from './cialo.js';
 import { KATEGORIE, KAT, element } from './katalog.js';
 
 export const WARSTWY = ['efektyTyl', 'skrzydla', 'tyl', 'wlosyTyl', 'ogon', 'cialo', 'bielizna', 'rajstopy', 'buty', 'dol', 'gora', 'suknia', 'okrycie',
-  'ramiona', 'rekawy', 'rekawiczki', 'szyja', 'glowa', 'twarzPod', 'oczy', 'twarzNad', 'wlosy', 'kolczyki', 'czapka', 'okulary', 'wreka', 'dlon', 'zwierzak', 'efekty'];
+  'ramiona', 'rekawy', 'rekawiczki', 'szyja', 'glowa', 'twarzPod', 'oczy', 'twarzNad', 'wlosy', 'kolczyki', 'czapka', 'okulary', 'wreka', 'dlon', 'wrekaNad', 'zwierzak', 'efekty'];
 // Zwierzak i efekty stoją w scenie, nie skalują się razem z postacią.
 const SCENA = new Set(['zwierzak', 'efekty', 'efektyTyl']);
 // Głowa siedzi 8 px niżej niż w rysunkach katalogu – krótsza szyja wygląda słodziej, a katalog zostaje w jednym układzie.
@@ -43,7 +43,9 @@ export function rysujPostac(stan, { pref = 'p', kadr = '0 0 600 800', pelny = tr
     L.glowa = glowa(p, skora, w.ksztalt?.id, w.uszy?.id);
     if (!jestSuknia) L.bielizna = bielizna(p, !w.gora || w.gora.id === 'brak', !w.dol || w.dol.id === 'brak');
     const rek = w.rekawiczki && w.rekawiczki.id !== 'brak' ? kolory('rekawiczki', w.rekawiczki) : null;
-    L.dlon = dlonie(skora, rek ? rek[0] : null);
+    // zimowe rękawiczki (jednopalczaste, bez palców) zmieniają kształt dłoni, więc rysują ją same
+    const rekEl = rek && element('rekawiczki', w.rekawiczki.id);
+    L.dlon = rekEl?.dlon ? rekEl.dlon(p, { k: rek }, skora) : dlonie(skora, rek ? rek[0] : null);
     if (w.rekawiczki?.id === 'lapki') {
       // poduszeczki kocich łapek
       const pad = `<ellipse cx="212" cy="528" rx="7" ry="6" fill="${rek[1]}"/><circle cx="204" cy="516" r="3" fill="${rek[1]}"/><circle cx="212" cy="512" r="3" fill="${rek[1]}"/><circle cx="220" cy="516" r="3" fill="${rek[1]}"/>`;
@@ -63,13 +65,13 @@ export const DOMYSLNA = {
   w: {
     skora: { id: 'jasna', k: ['#ffdcc4'] }, ksztalt: { id: 'okragla' }, uszy: { id: 'ludzkie' },
     oczy: { id: 'duze', k: ['#5b8def'] }, rzesy: { id: 'naturalne', k: ['#2a1a2e'] }, kreska: { id: 'brak', k: ['#1b1020'] },
-    cienie: { id: 'brak' }, brwi: { id: 'naturalne', k: ['#5a3726'] }, nos: { id: 'kropka' }, usta: { id: 'usmiech', k: ['#e8848f'] },
+    cienie: { id: 'brak' }, brwi: { id: 'naturalne', k: ['#5a3726'] }, nos: { id: 'zgrabny' }, usta: { id: 'usmiech', k: ['#e8848f'] },
     policzki: { id: 'rumience', k: ['#ff8fa8', '#b0705a'] }, malunki: { id: 'brak' },
     fryzura: { id: 'dlugie', k: ['#6b3e26', '#6b3e26', '#ff5d8f'] }, grzywka: { id: 'zaslonka' }, nakrycie: { id: 'brak' },
-    rajstopy: { id: 'brak' }, buty: { id: 'trampki', k: ['#ff5d8f', '#ffffff'] }, dol: { id: 'mini', k: ['#8b5cf6', '#ffffff'] },
-    gora: { id: 'koszulka', k: ['#ff8fc7', '#ffffff'] }, suknia: { id: 'brak' }, okrycie: { id: 'brak' }, rekawiczki: { id: 'brak' },
+    rajstopy: { id: 'rajstopy', k: ['#ffffff', '#ffffff'] }, buty: { id: 'emu', k: ['#c8a070', '#f6ead8'] }, dol: { id: 'mini', k: ['#8b5cf6', '#ffffff'] },
+    gora: { id: 'sweterWarkocz', k: ['#ffd6e8', '#ffffff'] }, suknia: { id: 'brak' }, okrycie: { id: 'brak' }, rekawiczki: { id: 'brak' },
     naszyjnik: { id: 'brak' }, kolczyki: { id: 'brak' }, okulary: { id: 'brak' }, wreka: { id: 'brak' }, skrzydla: { id: 'brak' },
-    ogon: { id: 'brak' }, tlo: { id: 'wybieg' }, zwierzak: { id: 'brak' }, efekty: { id: 'brak' },
+    ogon: { id: 'brak' }, tlo: { id: 'zimowa-wioska' }, zwierzak: { id: 'brak' }, efekty: { id: 'snieg' },
   },
 };
 

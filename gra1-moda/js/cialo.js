@@ -14,8 +14,9 @@ export const STOPA = 'M275 730C270 748 263 760 265 768C267 775 293 775 296 768C2
 export const SZYJA = 'M285 226L284 290L316 290L315 226Z';
 // Ręka jako ścieżka otwarta: wypełnienie domyka się samo, a obrys nie rysuje kreski w miejscu, gdzie ręka wchodzi w bark.
 export const REKA = 'M240 292C222 296 214 316 214 340C213 370 210 400 208 420C205 450 202 475 202 494L222 494C224 470 228 445 232 420C236 395 242 362 247 336';
-export const DLON = 'M201 486C195 505 196 526 204 538C209 546 220 546 224 537C228 524 227 505 223 486Z';
-export const DLON_DET = 'M223 500C231 505 231 516 224 521M210 531L210 541M216 532L216 542';
+// Dłoń z palcami: kciuk z przodu (od strony ciała), palce lekko podwinięte.
+export const DLON = 'M201 484C197 496 195 510 196 522C196 531 198 538 201 543C203 547 207 549 211 548C215 547 218 544 219 540C220 535 220 530 219 526C222 528 226 527 227 523C228 516 226 506 223 496L223 484Z';
+export const DLON_DET = 'M204 527Q205 536 206 544M209 529Q210 538 211 547M214 528Q215 536 215 544M219 526Q217 519 218 511';
 // Punkt, w którym dłoń (lewa na ekranie) trzyma przedmiot.
 export const CHWYT = [212, 516];
 
@@ -39,8 +40,10 @@ export function cialo(p, skora) {
     `<g opacity=".7">${ksz(`fill="${p.cien}"`)}</g>` +
     // cień pod brodą na szyi
     `<path d="M285 244Q300 272 315 244L315 266Q300 278 285 266Z" fill="${o}" opacity=".22"/>` +
-    // kolana i pępek – drobiazgi, które ożywiają gołe nogi
-    obie(`<path d="M270 612Q278 618 286 612" fill="none" stroke="${o}" stroke-width="1.6" opacity=".5"/>`) +
+    // kolana, obojczyki i pępek – drobiazgi, które ożywiają gołą skórę
+    obie(`<path d="M270 612Q278 618 286 612" fill="none" stroke="${o}" stroke-width="1.6" opacity=".5"/>` +
+      `<path d="M268 628Q276 634 284 630" fill="none" stroke="${o}" stroke-width="1.2" opacity=".25"/>` +
+      `<path d="M262 297Q276 302 291 298" fill="none" stroke="${o}" stroke-width="1.6" stroke-linecap="round" opacity=".35"/>`) +
     `<path d="M300 432q-2 4 0 6" fill="none" stroke="${o}" stroke-width="1.8" opacity=".55"/></g>`;
 }
 
@@ -62,6 +65,17 @@ export const USZY = {
   male: 'M240 170C230 166 226 182 233 190C236 193 239 193 241 191',
 };
 
+// Delikatny cień przy brzegu twarzy: środek zostaje jasny, krawędź ciemnieje – buzia przestaje być płaska.
+function cienTwarzy(p, o) {
+  const klucz = 'cienTwarzy' + o;
+  if (!p.pamiec.has(klucz)) {
+    const id = p.id('ct');
+    p.defs.push(`<radialGradient id="${id}" cx=".5" cy=".42" r=".62"><stop offset=".62" stop-color="${o}" stop-opacity="0"/><stop offset="1" stop-color="${o}" stop-opacity=".32"/></radialGradient>`);
+    p.pamiec.set(klucz, `url(#${id})`);
+  }
+  return p.pamiec.get(klucz);
+}
+
 export function glowa(p, skora, ksztalt = 'okragla', uszy = 'ludzkie') {
   const o = obrysSkory(skora);
   const ucho = USZY[uszy] || USZY.ludzkie;
@@ -69,7 +83,11 @@ export function glowa(p, skora, ksztalt = 'okragla', uszy = 'ludzkie') {
   return obie(`<path d="${ucho}" fill="${skora}" stroke="${o}" stroke-width="2.6" stroke-linejoin="round"/>` +
     `<path d="M236 176q-6 4 -2 12" fill="none" stroke="${o}" stroke-width="1.6" opacity=".6"/>`) +
     `<path d="${d}" fill="${skora}" stroke="${o}" stroke-width="2.8" stroke-linejoin="round"/>` +
-    `<path d="${d}" fill="${p.promienisty('#ffffff', '#ffffff', 0.18, 0)}"/>`;
+    `<path d="${d}" fill="${cienTwarzy(p, o)}"/>` +
+    `<path d="${d}" fill="${p.promienisty('#ffffff', '#ffffff', 0.18, 0)}"/>` +
+    // jaśniejsze kości policzkowe i czubek brody
+    obie(`<ellipse cx="258" cy="194" rx="14" ry="9" fill="${p.promienisty('#ffffff', '#ffffff', 0.22, 0)}"/>`) +
+    `<ellipse cx="300" cy="240" rx="12" ry="5" fill="${p.promienisty('#ffffff', '#ffffff', 0.2, 0)}"/>`;
 }
 
 // Bielizna, gdy nic nie zakrywa tułowia – postać nigdy nie stoi „goła”.

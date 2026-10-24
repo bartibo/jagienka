@@ -3,7 +3,7 @@ import { obie, obrys, ciemniej, jasniej, mieszaj, gwiazda, serce, blysk, nietope
 import { CHWYT } from './cialo.js';
 
 const zl = '#ffd23f', zlO = '#b8860b';
-const opaska = (c) => `<path d="M226 136Q228 78 300 74Q372 78 374 136" fill="none" stroke="${obrys(c)}" stroke-width="10" stroke-linecap="round"/><path d="M226 136Q228 78 300 74Q372 78 374 136" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
+export const opaska = (c) => `<path d="M226 136Q228 78 300 74Q372 78 374 136" fill="none" stroke="${obrys(c)}" stroke-width="10" stroke-linecap="round"/><path d="M226 136Q228 78 300 74Q372 78 374 136" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
 
 /* ---------- NAKRYCIA GŁOWY ---------- */
 export const NAKRYCIA = [

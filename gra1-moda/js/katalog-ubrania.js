@@ -512,3 +512,6 @@ export const BUTY = [
   },
 ];
 
+
+// Klocki dla kolekcji zimowej (katalog-zima-*.js) – te same rękawy i kroje, żeby nowe ubrania pasowały do starych.
+export { REKAWY, rekaw, zdobienie, otwarta, nogi, falbany, TUTU, SWETER, KOSZULKA, STANIK, STANIK_V, STANIK_RAM, KOMBINEZON };

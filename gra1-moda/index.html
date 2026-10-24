@@ -3,22 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Studio Mody – Gry Jagienki</title>
-  <meta name="description" content="Stwórz własną postać, ubierz ją w setki strojów, zrób makijaż i halloweenowe przebranie. Zapisz ją i pobierz jako obrazek.">
+  <title>Studio Jagienki – stwórz i ubierz postać</title>
+  <meta name="description" content="Studio Jagienki: stwórz własną postać, ubierz ją w setki strojów na każdą porę roku – zimowe, świąteczne i halloweenowe – zrób makijaż, zapisz i pobierz jako obrazek.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E👗%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styl.css">
 </head>
-<body>
+<body data-sezon="zima">
+  <div class="dekoracje" id="dekoracje" aria-hidden="true"></div>
   <header class="pasek">
     <a class="powrot" href="../" title="Wszystkie gry Jagienki">‹ Gry</a>
-    <h1>Studio <span>Mody</span> <i aria-hidden="true">✨</i></h1>
+    <h1>Studio <span>Jagienki</span> <i aria-hidden="true">✨</i></h1>
     <nav class="akcje" aria-label="Akcje">
       <button data-akcja="pomysly" class="przycisk mocny" title="Gotowe stylizacje do przerobienia"><b>💡</b><span>Pomysły</span></button>
       <button data-akcja="losuj" class="przycisk" title="Wylosuj cały strój"><b>🎲</b><span>Losuj</span></button>
-      <button data-akcja="halloween" class="przycisk dyniowy" title="Wylosuj przebranie na Halloween"><b>🎃</b><span>Halloween</span></button>
+      <button data-akcja="pory" id="przycisk-sezonu" class="przycisk sezonowy" title="Wybierz porę roku"><b>❄️</b><span>Zima</span></button>
+      <button data-akcja="sezonowe" id="los-sezonu" class="przycisk zimowy" title="Wylosuj strój na tę porę roku"><b>🎲</b><span>Zimowy strój</span></button>
       <button data-akcja="wyzwanie" class="przycisk zloty" title="Wyzwanie z jury"><b>🏆</b><span>Wyzwanie</span></button>
       <button data-akcja="odznaki" class="przycisk" title="Twoje odznaki"><b>🎖️</b><span>Odznaki</span></button>
       <button data-akcja="cofnij" class="przycisk maly" title="Cofnij (Ctrl+Z)" aria-label="Cofnij"><b>↶</b></button>
@@ -51,6 +53,7 @@
       <nav class="grupy" id="grupy"></nav>
       <nav class="kategorie" id="kategorie"></nav>
       <div class="przewijane" id="przewijane">
+        <div class="filtr" id="filtr" hidden></div>
         <p class="uwaga" id="uwaga" hidden></p>
         <div class="elementy" id="elementy"></div>
         <div class="kolory" id="kolory"></div>

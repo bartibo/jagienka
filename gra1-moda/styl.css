@@ -1,4 +1,4 @@
-/* Studio Mody – nocne, halloweenowo-cukierkowe studio: ciemny fiolet wokół, jasne panele, róż i pomarańcz jako akcenty. */
+/* Studio Jagienki – nocne, cukierkowe studio: ciemny fiolet wokół, jasne panele, róż jako akcent; pora roku dokłada swoje kolory i ozdoby. */
 :root {
   --noc: #1d0f33;
   --noc2: #3b1a60;
@@ -65,6 +65,11 @@ input { font: inherit; color: inherit; }
 .przycisk.maly { padding: 6px 10px 5px; }
 .przycisk.mocny { background: linear-gradient(135deg, #ff6fb5, #c13ad6); box-shadow: 0 4px 14px #ff4fa366; }
 .przycisk.dyniowy { background: linear-gradient(135deg, #ffb347, #ff6a00); box-shadow: 0 4px 14px #ff8a1f55; }
+.przycisk.zimowy { background: linear-gradient(135deg, #8fe3ff, #4a7dff); box-shadow: 0 4px 14px #4cc9f055; }
+.przycisk.sezonowy { background: linear-gradient(135deg, #ffffff38, #ffffff14); box-shadow: inset 0 0 0 2px #ffffff66; }
+body[data-sezon="jesien"] .przycisk.zimowy { background: linear-gradient(135deg, #ffb347, #ff6a00); box-shadow: 0 4px 14px #ff8a1f55; }
+body[data-sezon="wiosna"] .przycisk.zimowy { background: linear-gradient(135deg, #a0f0b8, #3cb878); box-shadow: 0 4px 14px #5fd06855; }
+body[data-sezon="lato"] .przycisk.zimowy { background: linear-gradient(135deg, #ffe066, #ff7a3d); box-shadow: 0 4px 14px #ffb84d55; }
 .przycisk.zloty { background: linear-gradient(135deg, #ffe066, #ffab00); color: #4a2a00; box-shadow: 0 4px 14px #ffc93c55; }
 .przycisk:disabled { opacity: .4; pointer-events: none; }
 
@@ -191,7 +196,7 @@ dialog::backdrop { background: #12062299; backdrop-filter: blur(3px); }
 .okno-tresc .pod { margin: 0 0 14px; color: var(--szary); }
 .okno-tresc .zamknij { position: absolute; top: 12px; right: 14px; border: 0; background: var(--panel2); border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; }
 .rzad { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; justify-content: flex-end; }
-.rzad .przycisk:not(.mocny):not(.zloty):not(.dyniowy) { color: var(--tekst); background: var(--panel2); box-shadow: inset 0 0 0 2px var(--linia); }
+.rzad .przycisk:not(.mocny):not(.zloty):not(.dyniowy):not(.zimowy) { color: var(--tekst); background: var(--panel2); box-shadow: inset 0 0 0 2px var(--linia); }
 .karty { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .karta { border: 0; padding: 0; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 0 0 2px var(--linia); text-align: center; position: relative; }
 .karta:hover { box-shadow: 0 0 0 3px var(--roz); }
@@ -286,3 +291,24 @@ dialog { overflow-y: auto; overscroll-behavior: contain; }
 :focus-visible { outline: 3px solid var(--fiolet); outline-offset: 2px; }
 .okno-tresc .zamknij:focus-visible { outline-color: var(--roz); }
 @media (max-width: 480px) { .pasek h1 { display: none; } .akcje { margin-left: 0; } }
+
+/* ---------- pory roku ---------- */
+body[data-sezon="zima"] { background-color: #18204a; }
+.dekoracje { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.dekoracje i { position: absolute; top: -30px; font-style: normal; color: #fff; opacity: .55; animation: spadaj linear infinite; }
+@keyframes spadaj { to { transform: translate(40px, 105vh) rotate(260deg); } }
+.pasek, .studio { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .dekoracje { display: none; } }
+.filtr { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 8px; }
+.filtr button { border: 0; border-radius: 999px; padding: 4px 12px 3px; background: var(--panel2); box-shadow: inset 0 0 0 2px var(--linia); font-weight: 700; font-size: .9rem; color: var(--tekst); }
+.filtr button.akt { background: linear-gradient(135deg, #8fe3ff, #4a7dff); color: #fff; box-shadow: none; }
+.pory { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; }
+.pora { border: 0; border-radius: 16px; min-height: 190px; padding: 12px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 2px;
+  background-size: cover; background-position: center; color: #fff; text-align: left; box-shadow: 0 6px 18px #2b184033; transition: transform .12s; }
+.pora:hover { transform: translateY(-3px); }
+.pora.akt { outline: 4px solid var(--roz); outline-offset: 2px; }
+.pora .e { font-size: 2rem; line-height: 1; }
+.pora b { font-size: 1.3rem; }
+.pora small { opacity: .92; line-height: 1.2; }
+.karta .obr { position: relative; }
+.karta .obr .znaczek { position: absolute; top: 6px; left: 8px; font-size: 1.1rem; }
