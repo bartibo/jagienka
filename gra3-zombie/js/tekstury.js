@@ -482,9 +482,10 @@ export function zombieAtlasTextures(cfg) {
 
     // Skóra: blada, plamy, żyłki, zaschnięta krew
     fill(ATLAS.skin, cfg.skin);
-    blotches(ATLAS.skin, ['rgba(60,70,50,A)', 'rgba(110,80,90,A)', 'rgba(150,150,120,A)'], 60, 8, 40, 0.45);
-    blotches(ATLAS.skin, ['rgba(90,10,10,A)', 'rgba(60,5,5,A)'], 14, 5, 22, 0.7);
-    {
+    // cfg.clean = postać innego gracza: zdrowa skóra, bez krwi, dziur i świecących oczu
+    blotches(ATLAS.skin, ['rgba(60,70,50,A)', 'rgba(110,80,90,A)', 'rgba(150,150,120,A)'], cfg.clean ? 25 : 60, 8, 40, cfg.clean ? 0.12 : 0.45);
+    if (!cfg.clean) blotches(ATLAS.skin, ['rgba(90,10,10,A)', 'rgba(60,5,5,A)'], 14, 5, 22, 0.7);
+    if (!cfg.clean) {
         const [x, y, w, h] = rect(ATLAS.skin);
         ctx.strokeStyle = 'rgba(50,40,70,0.35)';
         ctx.lineWidth = 1;
@@ -520,8 +521,8 @@ export function zombieAtlasTextures(cfg) {
         }
     }
     blotches(ATLAS.shirt, ['rgba(70,55,35,A)', 'rgba(40,35,30,A)'], 30, 10, 45, 0.5);
-    blotches(ATLAS.shirt, ['rgba(95,8,8,A)', 'rgba(60,4,4,A)'], 10 + Math.round(cfg.torn * 16), 10, 40, 0.8);
-    {
+    if (!cfg.clean) blotches(ATLAS.shirt, ['rgba(95,8,8,A)', 'rgba(60,4,4,A)'], 10 + Math.round(cfg.torn * 16), 10, 40, 0.8);
+    if (!cfg.clean) {
         const [x, y, w, h] = rect(ATLAS.shirt);
         const holes = Math.round(cfg.torn * 18);
         for (let i = 0; i < holes; i++) {
@@ -549,7 +550,7 @@ export function zombieAtlasTextures(cfg) {
         ctx.fillStyle = g;
         ctx.fillRect(x, y, w, h);
     }
-    blotches(ATLAS.pants, ['rgba(90,8,8,A)'], 6, 8, 26, 0.7);
+    if (!cfg.clean) blotches(ATLAS.pants, ['rgba(90,8,8,A)'], 6, 8, 26, 0.7);
     speckle(ATLAS.pants, 2000, 0.1);
 
     fill(ATLAS.shoes, cfg.shoes);
@@ -571,11 +572,13 @@ export function zombieAtlasTextures(cfg) {
         const [x, y, w, h] = rect(ATLAS.eyes);
         ctx.fillStyle = cfg.eyeColor;
         ctx.fillRect(x + w * 0.3, y + h * 0.3, w * 0.4, h * 0.4);
-        em.ctx.fillStyle = cfg.eyeColor;
-        em.ctx.fillRect(x, y, w, h);
+        if (!cfg.clean) {
+            em.ctx.fillStyle = cfg.eyeColor;
+            em.ctx.fillRect(x, y, w, h);
+        }
     }
-    fill(ATLAS.mouth, '#2a0a08');
-    blotches(ATLAS.mouth, ['rgba(140,20,15,A)'], 10, 6, 20, 0.8);
+    fill(ATLAS.mouth, cfg.clean ? '#7a4a40' : '#2a0a08');
+    if (!cfg.clean) blotches(ATLAS.mouth, ['rgba(140,20,15,A)'], 10, 6, 20, 0.8);
 
     const map = toTexture(c);
     const emissive = toTexture(em.c);

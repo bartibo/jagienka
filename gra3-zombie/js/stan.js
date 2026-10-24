@@ -61,7 +61,9 @@ export const gameState = {
     recoilOffset: 0,
     crosshairSpread: 0,
     switchTimer: 0,
-    flashlightOn: false
+    flashlightOn: false,
+    downed: false,      // w grze sieciowej: gracz poległ i czeka na koniec poziomu
+    iAmReady: false
 };
 
 // Gracze, za którymi idą zombie. Na razie jest tylko jeden (lokalny), ale AI zombie
@@ -174,11 +176,12 @@ export const keys = {
 };
 
 // Ustawienia zapamiętywane w przeglądarce (jakość grafiki, czułość myszy)
-export const settings = { quality: 'auto', sensitivity: 1.0 };
+export const settings = { quality: 'auto', sensitivity: 1.0, name: '' };
 try {
     const saved = JSON.parse(localStorage.getItem('martwa-osada-ustawienia') || '{}');
     if (saved.quality) settings.quality = saved.quality;
     if (saved.sensitivity) settings.sensitivity = saved.sensitivity;
+    if (saved.name) settings.name = String(saved.name).slice(0, 14);
 } catch (e) {}
 
 export function saveSettings() {

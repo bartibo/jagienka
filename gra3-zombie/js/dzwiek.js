@@ -154,12 +154,23 @@ export class SoundSystem {
         }
     }
 
-    playGunshot(weaponId) {
+    // vol/pan – strzał innego gracza: ciszej z odległości i z kierunku
+    playGunshot(weaponId, vol = 1, pan = 0) {
         try {
             if (!this.ctx) return;
             const ctx = this.ctx;
             const now = ctx.currentTime;
             const s = GUN_SOUND[weaponId] || GUN_SOUND.pistol;
+            let out = this.master;
+            if (vol !== 1 || pan !== 0) {
+                const panner = ctx.createStereoPanner();
+                panner.pan.value = Math.max(-1, Math.min(1, pan));
+                const g = ctx.createGain();
+                g.gain.value = vol;
+                g.connect(panner);
+                panner.connect(this.master);
+                out = g;
+            }
 
             const noise = ctx.createBufferSource();
             noise.buffer = this.noiseBuffers[weaponId] || this.noiseBuffers.pistol;
@@ -176,7 +187,7 @@ export class SoundSystem {
 
             noise.connect(filter);
             filter.connect(gain);
-            gain.connect(this.master);
+            gain.connect(out);
             gain.connect(this.echoSend);
             noise.start(now);
 
@@ -189,7 +200,7 @@ export class SoundSystem {
             oscGain.gain.setValueAtTime(s.gain * 1.1, now);
             oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
             osc.connect(oscGain);
-            oscGain.connect(this.master);
+            oscGain.connect(out);
             osc.start(now);
             osc.stop(now + 0.17);
         } catch (e) {}

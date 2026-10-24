@@ -264,3 +264,38 @@ export function setScopeVisible(visible) {
 export function setFps(fps) {
     if (els['fps-counter']) setText(els['fps-counter'], `${Math.round(fps)} kl/s`);
 }
+
+// Lista graczy w grze sieciowej (imię, zdrowie, czy w menu / poległ)
+let playersKey = '';
+export function renderPlayers(list) {
+    const box = document.getElementById('mp-players');
+    if (!box) return;
+    if (!list) {
+        box.classList.add('hidden');
+        playersKey = '';
+        return;
+    }
+    const key = JSON.stringify(list.map(p => [p.name, Math.ceil(p.hp), p.alive, p.menu, p.inGame]));
+    if (key === playersKey) return;
+    playersKey = key;
+    box.classList.remove('hidden');
+    box.innerHTML = '';
+    for (const p of list) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        const status = !p.inGame ? '⏳' : !p.alive ? '💀' : p.menu ? '⏸' : '';
+        const hp = Math.max(0, Math.min(100, p.hp));
+        row.innerHTML = `
+            <span class="w-2 h-2 rounded-full shrink-0"></span>
+            <span class="font-bold text-[11px] w-24 truncate"></span>
+            <span class="w-16 h-1.5 bg-stone-800 rounded-full overflow-hidden"><span class="block h-full bg-red-500"></span></span>
+            <span class="text-[11px] w-4"></span>`;
+        const [dot, name, bar, st] = row.children;
+        dot.style.backgroundColor = p.color;
+        name.textContent = p.name + (p.me ? ' (Ty)' : '');
+        name.style.color = p.color;
+        bar.firstElementChild.style.width = `${p.alive ? hp : 0}%`;
+        st.textContent = status;
+        box.appendChild(row);
+    }
+}

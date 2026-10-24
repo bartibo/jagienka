@@ -38,3 +38,6 @@ Używaj w ścieżkach linków względnych (`img/obrazek.png`, a nie `/img/obraze
   Tekstury w `tekstury/` to skany CC0 z [Poly Haven](https://polyhaven.com) (1k, przekompresowane); reszta rysowana kodem.
   `styl.css` to zbudowany Tailwind 3 (`tailwind/` – komenda przebudowy w `tailwind.config.js`).
   `wersja-pierwsza.html` to pierwotna wersja gry w jednym pliku. Do testów: `?fps` pokazuje licznik klatek, `window.__gra` steruje grą.
+  Gra sieciowa do 3 osób (`js/siec.js`, `js/gracze.js`): przeglądarki łączą się bezpośrednio przez WebRTC (PeerJS 1.5.4 z CDN,
+  darmowy serwer PeerJS tylko kojarzy graczy po 5-znakowym kodzie), więc nie trzeba własnego serwera – działa na GitHub Pages.
+  Gospodarz liczy fale, zombie i łup, goście wysyłają mu pozycję i trafienia. Link zaproszenia: `gra3-zombie/?pokoj=KOD`.

@@ -17,7 +17,8 @@
     {
         "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+            "peerjs": "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm"
         }
     }
     </script>
@@ -75,6 +76,19 @@
         </div>
     </div>
 
+    <!-- Gra sieciowa: podpowiedź, że trzeba kliknąć, by złapać kursor -->
+    <div id="click-to-play" class="hidden fixed inset-x-0 top-1/3 z-30 pointer-events-none flex justify-center">
+        <div class="bg-stone-950/90 border border-amber-400 text-amber-300 font-bold uppercase tracking-wider text-sm px-4 py-2 rounded-lg shadow-xl">🖱 Kliknij, aby walczyć dalej</div>
+    </div>
+
+    <!-- Gra sieciowa: gracz poległ i czeka, aż drużyna skończy poziom -->
+    <div id="downed-overlay" class="hidden fixed inset-0 z-30 pointer-events-none flex items-center justify-center bg-red-950/40">
+        <div class="bg-stone-950/90 border-2 border-red-600 rounded-2xl px-6 py-4 text-center shadow-2xl max-w-md">
+            <div class="font-teko text-5xl text-red-500 tracking-widest uppercase leading-none">POLEGŁAŚ / POLEGŁEŚ</div>
+            <p class="text-stone-300 text-sm mt-1">Drużyna walczy dalej! Wstaniesz, gdy skończy się ten poziom. Jeśli polegną wszyscy – koniec gry.</p>
+        </div>
+    </div>
+
     <!-- HUD (Interfejs Gracza) -->
     <div id="hud" class="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 md:p-5">
 
@@ -129,6 +143,7 @@
                     <button data-akcja="pauza" class="px-2 py-0.5 bg-red-900/80 hover:bg-red-800 text-red-200 font-bold rounded cursor-pointer">[P] Pauza</button>
                 </div>
                 <div id="fps-counter" class="hidden text-[11px] font-bold text-emerald-300 bg-black/70 px-2 py-0.5 rounded"></div>
+                <div id="mp-players" class="hidden bg-stone-950/85 border border-stone-800 rounded-lg px-2.5 py-1.5 space-y-1 shadow-lg"></div>
             </div>
         </div>
 
@@ -143,6 +158,7 @@
             <p id="bl-desc" class="text-stone-300 text-xs md:text-sm mb-4">
                 Wszystkie zombiaki z tego poziomu zostały pokonane! W domkach pojawiły się nowe apteczki i amunicja. Kup lepszą broń w Sklepiku i rozpocznij kolejny poziom, gdy będziesz gotowa.
             </p>
+            <div id="bl-ready" class="hidden text-sm font-bold text-amber-300 mb-3"></div>
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button data-akcja="sklep" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-teko text-2xl tracking-wider uppercase rounded-xl font-bold shadow-lg transition transform hover:scale-105 cursor-pointer">
                     🛒 OTWÓRZ SKLEPIK BRONI [B]
@@ -305,6 +321,7 @@
                 </div>
             </div>
 
+            <div id="shop-net-warning" class="hidden text-center text-xs font-bold text-red-300 bg-red-950/60 border border-red-800 rounded-lg py-1 mb-1">⚠ Gra sieciowa: świat się nie zatrzymuje – zombie mogą cię zaatakować, gdy robisz zakupy!</div>
             <div id="shop-feedback" class="text-center h-6 text-sm font-bold text-emerald-400 my-1"></div>
 
             <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2 border-t border-stone-800">
@@ -380,6 +397,32 @@
                 </label>
             </div>
 
+            <!-- Gra z przyjaciółmi (WebRTC, do 3 osób) -->
+            <div class="bg-indigo-950/40 border border-indigo-800/70 rounded-xl p-3 mb-5 text-left text-xs">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-indigo-300 uppercase font-bold tracking-wider">🧑‍🤝‍🧑 Gra z przyjaciółmi (do 3 osób)</span>
+                    <button id="mp-leave" data-akcja="mp-wyjdz" class="hidden px-2 py-0.5 rounded bg-stone-800 border border-stone-700 text-stone-300 font-bold cursor-pointer">Wyjdź z pokoju</button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <input id="mp-name" type="text" maxlength="14" placeholder="Twoje imię" class="px-2 py-1.5 rounded bg-stone-900 border border-stone-700 text-white font-bold sm:w-36">
+                    <button id="mp-host-btn" data-akcja="mp-zaloz" class="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer disabled:opacity-50">Załóż grę</button>
+                    <div id="mp-join-row" class="flex gap-2 flex-1">
+                        <input id="mp-code" type="text" maxlength="5" placeholder="KOD" class="px-2 py-1.5 rounded bg-stone-900 border border-stone-700 text-white font-bold uppercase tracking-widest w-24">
+                        <button id="mp-join-btn" data-akcja="mp-dolacz" class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-black font-bold cursor-pointer disabled:opacity-50">Dołącz</button>
+                    </div>
+                </div>
+                <div id="mp-room" class="hidden mt-2 bg-stone-950/70 border border-stone-800 rounded-lg p-2">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <span class="text-stone-400">Kod pokoju:</span>
+                        <span id="mp-room-code" class="font-teko text-3xl text-amber-300 tracking-[0.3em] leading-none"></span>
+                        <button data-akcja="mp-kopiuj" class="px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold cursor-pointer">Kopiuj link</button>
+                    </div>
+                    <div id="mp-room-link" class="text-stone-500 break-all mt-1"></div>
+                </div>
+                <div class="text-stone-400 mt-1">W pokoju: <span id="mp-people" class="text-stone-200">–</span></div>
+                <div id="mp-status" class="text-xs mt-2 text-stone-400">Załóż grę i wyślij kod znajomym albo wpisz kod od kogoś i dołącz.</div>
+            </div>
+
             <p id="touch-warning" class="hidden text-amber-300 text-xs mb-3">Ta gra potrzebuje klawiatury i myszki – najlepiej zagrać na komputerze.</p>
 
             <button id="start-btn" disabled class="w-full py-4 bg-gradient-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:to-red-500 text-white font-teko text-4xl tracking-widest uppercase rounded-xl shadow-[0_0_25px_rgba(220,38,38,0.6)] transition transform hover:scale-[1.02] active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-wait disabled:hover:scale-100">
@@ -397,7 +440,7 @@
             <div class="inline-block px-3 py-1 bg-red-900/60 border border-red-500 text-red-200 text-xs font-bold uppercase tracking-widest rounded-full mb-2">
                 PORAŻKA • ZOMBIE CIĘ DOPADŁY
             </div>
-            <h2 class="font-teko text-6xl md:text-7xl text-red-500 tracking-widest uppercase leading-none mb-2 title-glow">
+            <h2 id="go-title" class="font-teko text-6xl md:text-7xl text-red-500 tracking-widest uppercase leading-none mb-2 title-glow">
                 PRZEGRAŁAŚ!
             </h2>
             <p class="text-stone-300 text-sm mb-6">
@@ -423,7 +466,8 @@
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-3">
+            <p id="go-wait" class="hidden text-amber-300 font-bold text-sm">Czekamy, aż gospodarz zdecyduje: powtórka poziomu albo gra od nowa...</p>
+            <div id="go-buttons" class="flex flex-col sm:flex-row gap-3">
                 <button data-akcja="powtorz" class="flex-1 py-4 bg-amber-500 hover:bg-amber-400 text-black font-teko text-3xl tracking-wider uppercase rounded-xl font-bold shadow-[0_0_25px_rgba(245,158,11,0.5)] transition transform hover:scale-105 cursor-pointer">
                     🔄 POWTÓRZ TEN POZIOM (ZACHOWAJ BRONIE)
                 </button>

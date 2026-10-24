@@ -33,10 +33,11 @@ const BONES = [
 ];
 const B = Object.fromEntries(BONES.map((b, i) => [b[0], i]));
 
-let sharedGeometry = null;
+const geometries = {};
 
-// Buduje ciało z prostych brył; każda bryła należy w całości do jednej kości i do jednego pola atlasu
-function buildBodyGeometry() {
+// Buduje ciało z prostych brył; każda bryła należy w całości do jednej kości i do jednego pola atlasu.
+// survivor = postać innego gracza (bez strzępów ubrania, z zamkniętymi ustami)
+function buildBodyGeometry(survivor) {
     const parts = [];
     const add = (geo, bone, region, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => {
         geo.applyMatrix4(new THREE.Matrix4().compose(
@@ -54,13 +55,20 @@ function buildBodyGeometry() {
     add(caps(0.16, 0.16), B.chest, 'shirt', 0, 1.38, 0, 0, 0, 0, 1.25, 1, 0.78);
     add(sph(0.075), B.chest, 'shirt', -0.2, 1.5, 0);
     add(sph(0.075), B.chest, 'shirt', 0.2, 1.5, 0);
-    for (const [px, rz] of [[-0.09, 0.15], [0.03, -0.1], [0.12, 0.2]]) {
-        add(new THREE.BoxGeometry(0.1, 0.17, 0.012), B.spine, 'shirt', px, 0.97, 0.125, 0.15, 0, rz);   // strzępy koszuli
+    if (!survivor) {
+        for (const [px, rz] of [[-0.09, 0.15], [0.03, -0.1], [0.12, 0.2]]) {
+            add(new THREE.BoxGeometry(0.1, 0.17, 0.012), B.spine, 'shirt', px, 0.97, 0.125, 0.15, 0, rz);   // strzępy koszuli
+        }
     }
     add(new THREE.CylinderGeometry(0.05, 0.06, 0.14, 10), B.neck, 'skin', 0, 1.6, 0);
     add(sph(0.118, 18, 14), B.head, 'skin', 0, 1.755, 0.01, 0, 0, 0, 1, 1.16, 1.08);
-    add(new THREE.BoxGeometry(0.12, 0.045, 0.1), B.head, 'skin', 0, 1.645, 0.045, 0.3);                // opadnięta szczęka
-    add(new THREE.BoxGeometry(0.095, 0.03, 0.02), B.head, 'mouth', 0, 1.672, 0.103);
+    if (survivor) {
+        add(new THREE.BoxGeometry(0.11, 0.045, 0.1), B.head, 'skin', 0, 1.655, 0.04);
+        add(new THREE.BoxGeometry(0.06, 0.012, 0.02), B.head, 'mouth', 0, 1.69, 0.103);
+    } else {
+        add(new THREE.BoxGeometry(0.12, 0.045, 0.1), B.head, 'skin', 0, 1.645, 0.045, 0.3);            // opadnięta szczęka
+        add(new THREE.BoxGeometry(0.095, 0.03, 0.02), B.head, 'mouth', 0, 1.672, 0.103);
+    }
     add(new THREE.BoxGeometry(0.17, 0.03, 0.05), B.head, 'skin', 0, 1.79, 0.092, -0.2);                // łuk brwiowy
     add(new THREE.BoxGeometry(0.03, 0.05, 0.04), B.head, 'skin', 0, 1.74, 0.115, 0.3);                 // nos
     add(sph(0.021, 8, 6), B.head, 'eyes', -0.042, 1.762, 0.098);
@@ -152,11 +160,16 @@ const hitboxGeos = HITBOXES.map(([, size]) => new THREE.BoxGeometry(...size));
 
 export const zombies = [];
 export const dyingZombies = [];
+export const zombieById = new Map();
+export const TYPE_KEYS = ['walker', 'runner', 'tank'];
+let nextZombieId = 1;
 export const zombieHitboxes = [];   // płaska lista do raycastu (odświeżana przy zmianie składu)
 const pools = { walker: [], runner: [], tank: [] };
 
-function createZombie(typeKey) {
-    if (!sharedGeometry) sharedGeometry = buildBodyGeometry();
+// Postać z kośćmi (zombie albo inny gracz): siatka + słownik kości po nazwie
+export function makeRig(material, survivor = false) {
+    const key = survivor ? 'survivor' : 'zombie';
+    if (!geometries[key]) geometries[key] = buildBodyGeometry(survivor);
     const bones = BONES.map(([name, , off]) => {
         const b = new THREE.Bone();
         b.name = name;
@@ -164,7 +177,7 @@ function createZombie(typeKey) {
         return b;
     });
     BONES.forEach(([, parent], i) => { if (parent >= 0) bones[parent].add(bones[i]); });
-    const mesh = new THREE.SkinnedMesh(sharedGeometry, materialFor(typeKey, 0));
+    const mesh = new THREE.SkinnedMesh(geometries[key], material);
     mesh.add(bones[0]);
     mesh.updateMatrixWorld(true);
     mesh.bind(new THREE.Skeleton(bones));
@@ -172,9 +185,14 @@ function createZombie(typeKey) {
     mesh.receiveShadow = true;
     mesh.rotation.order = 'YXZ';
     mesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1.0, 0), 1.5);
+    const named = {};
+    bones.forEach(b => { named[b.name] = b; });
+    return { mesh, bones: named };
+}
 
-    const z = { mesh, type: typeKey, bones: {}, hitboxes: [] };
-    bones.forEach(b => { z.bones[b.name] = b; });
+function createZombie(typeKey) {
+    const { mesh, bones } = makeRig(materialFor(typeKey, 0));
+    const z = { mesh, type: typeKey, bones, hitboxes: [] };
     HITBOXES.forEach(([bone, , offset, isHead], i) => {
         const hb = new THREE.Mesh(hitboxGeos[i], hitboxMaterial);
         hb.position.set(...offset);
@@ -199,13 +217,17 @@ function resetPose(z) {
     z.bones.hips.position.y = 0.95;
 }
 
-export function spawnZombie(typeKey, x, zPos, levelBonusHp) {
+// opts.id / opts.variant – u gościa w grze sieciowej (kopia zombie gospodarza)
+export function spawnZombie(typeKey, x, zPos, levelBonusHp, opts = {}) {
     const cfg = zombieTypes[typeKey];
     const z = pools[typeKey].pop() || createZombie(typeKey);
     resetPose(z);
-    z.mesh.material = materialFor(typeKey, Math.floor(Math.random() * VARIANTS[typeKey].length));
+    const variant = opts.variant ?? Math.floor(Math.random() * VARIANTS[typeKey].length);
+    z.mesh.material = materialFor(typeKey, variant);
     const maxHp = Math.round(cfg.hp * levelBonusHp);
     Object.assign(z, {
+        id: opts.id ?? nextZombieId++,
+        variant,
         hp: maxHp,
         maxHp,
         baseSpeed: cfg.speed * (0.92 + Math.random() * 0.16),
@@ -230,6 +252,7 @@ export function spawnZombie(typeKey, x, zPos, levelBonusHp) {
     z.mesh.visible = true;
     scene.add(z.mesh);
     zombies.push(z);
+    zombieById.set(z.id, z);
     rebuildHitboxList();
     return z;
 }
@@ -244,6 +267,7 @@ export function removeAllZombies() {
     for (const d of dyingZombies) { scene.remove(d.z.mesh); pools[d.z.type].push(d.z); }
     zombies.length = 0;
     dyingZombies.length = 0;
+    zombieById.clear();
     rebuildHitboxList();
 }
 
@@ -257,6 +281,7 @@ export function startDeath(z, wasHeadshot) {
     const idx = zombies.indexOf(z);
     if (idx === -1) return;
     zombies.splice(idx, 1);
+    zombieById.delete(z.id);
     rebuildHitboxList();
     if (wasHeadshot) z.bones.head.scale.setScalar(0.001);
     z.dead = true;
@@ -353,18 +378,10 @@ export function updateZombies(dt, time, callbacks) {
     for (let i = 0; i < zombies.length; i++) {
         const z = zombies[i];
         const pos = z.mesh.position;
-        const cfg = zombieTypes[z.type];
         const gait = GAIT[z.type];
 
-        // wyłanianie się spod ziemi
         if (z.rise > 0) {
-            z.rise -= dt;
-            const k = 1 - Math.max(0, z.rise) / 1.3;
-            pos.y = (-1.9 + 1.9 * (1 - (1 - k) * (1 - k))) * cfg.scale;
-            z.bones.upperArmL.rotation.x = -2.6 + k * 1.2;
-            z.bones.upperArmR.rotation.x = -2.4 + k * 1.1;
-            z.bones.spine.rotation.x = 0.4 * (1 - k);
-            if (z.rise <= 0) pos.y = 0;
+            riseStep(z, dt);
             continue;
         }
 
@@ -441,7 +458,22 @@ export function updateZombies(dt, time, callbacks) {
         }
     }
 
-    // upadek pokonanych zombie
+    updateDying(dt);
+}
+
+// wyłanianie się spod ziemi
+function riseStep(z, dt) {
+    z.rise -= dt;
+    const k = 1 - Math.max(0, z.rise) / 1.3;
+    z.mesh.position.y = (-1.9 + 1.9 * (1 - (1 - k) * (1 - k))) * zombieTypes[z.type].scale;
+    z.bones.upperArmL.rotation.x = -2.6 + k * 1.2;
+    z.bones.upperArmR.rotation.x = -2.4 + k * 1.1;
+    z.bones.spine.rotation.x = 0.4 * (1 - k);
+    if (z.rise <= 0) z.mesh.position.y = 0;
+}
+
+// upadek pokonanych zombie
+function updateDying(dt) {
     for (let i = dyingZombies.length - 1; i >= 0; i--) {
         const d = dyingZombies[i];
         const z = d.z;
@@ -515,4 +547,76 @@ function animateZombie(z, gait, dt, speed, time) {
     b.upperArmR.rotation.z = 0.12;
     b.handL.rotation.x = 0.35;
     b.handR.rotation.x = 0.35;
+}
+
+// ----------------------------------------------------------------------------
+// Gra sieciowa – u gościa zombie są kopiami zombie gospodarza (pozycje z sieci, animacja na miejscu)
+// ----------------------------------------------------------------------------
+const r2 = (v) => Math.round(v * 100) / 100;
+export function snapshotZombies() {
+    return zombies.map(z => [
+        z.id, TYPE_KEYS.indexOf(z.type), z.variant,
+        r2(z.mesh.position.x), r2(z.mesh.position.z), r2(z.mesh.rotation.y),
+        z.rise > 0 ? r2(z.rise) : 0, z.attackAnim > 0 ? 1 : 0
+    ]);
+}
+
+const _seen = new Set();
+export function syncReplicas(list) {
+    _seen.clear();
+    for (const [id, typeIdx, variant, x, zPos, rot, rise, atk] of list) {
+        _seen.add(id);
+        let z = zombieById.get(id);
+        if (!z) {
+            z = spawnZombie(TYPE_KEYS[typeIdx], x, zPos, 1, { id, variant });
+            z.rise = rise;
+            if (rise <= 0) z.mesh.position.y = 0;
+            z.mesh.rotation.y = rot;
+        }
+        z.netX = x;
+        z.netZ = zPos;
+        z.netRot = rot;
+        if (atk && z.attackAnim <= 0) z.attackAnim = 0.4;
+    }
+    // zombie, których gospodarz już nie ma (np. po restarcie poziomu), znikają bez animacji
+    let changed = false;
+    for (let i = zombies.length - 1; i >= 0; i--) {
+        const z = zombies[i];
+        if (_seen.has(z.id)) continue;
+        scene.remove(z.mesh);
+        pools[z.type].push(z);
+        zombies.splice(i, 1);
+        zombieById.delete(z.id);
+        changed = true;
+    }
+    if (changed) rebuildHitboxList();
+}
+
+export function updateReplicas(dt, time, callbacks) {
+    const k = Math.min(1, dt * 10);
+    for (const z of zombies) {
+        if (z.rise > 0) {
+            riseStep(z, dt);
+            continue;
+        }
+        const pos = z.mesh.position;
+        const dx = (z.netX ?? pos.x) - pos.x, dz = (z.netZ ?? pos.z) - pos.z;
+        pos.x += dx * k;
+        pos.z += dz * k;
+        const speed = Math.min(z.baseSpeed * 1.4, Math.hypot(dx, dz) * k / Math.max(dt, 0.001));
+        let dr = (z.netRot ?? z.mesh.rotation.y) - z.mesh.rotation.y;
+        dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+        z.mesh.rotation.y += dr * k;
+        animateZombie(z, GAIT[z.type], dt, speed > 0.3 ? speed : 0, time);
+        z.groanTimer -= dt;
+        if (z.groanTimer <= 0) {
+            z.groanTimer = 3 + Math.random() * 7;
+            const p = nearestPlayer(pos);
+            if (p && callbacks.groan) {
+                const dist = Math.hypot(p.position.x - pos.x, p.position.z - pos.z);
+                if (dist < 30) callbacks.groan(z, dist);
+            }
+        }
+    }
+    updateDying(dt);
 }
