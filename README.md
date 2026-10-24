@@ -21,3 +21,10 @@ Używaj w ścieżkach linków względnych (`img/obrazek.png`, a nie `/img/obraze
   Galeria postaci w `localStorage`, eksport PNG z przezroczystym tłem i JPG z tłem, wyzwania z jury i odznaki.
   Postać i ubrania są rysowane kodem jako warstwy SVG (`js/`), tła w `tla/` wygenerowane w Nano Banana 2.1 (Google Gemini).
   Kontrakt rysunków: wszystkie elementy leżą w układzie 600 × 800 wzdłuż punktów ciała z `js/cialo.js`.
+- [`gra2-mesnik-anomalie/`](gra2-mesnik-anomalie/) – **Meśnik: Anomalie**: horror 3D w przeglądarce (Three.js). Gracz przechodzi przez
+  10 wagonów ekspresu „Meśnik” (druga klasa, przedziały, Wars, sypialny, bagażowy z manekinami, pierwsza klasa, tunel, wagon opuszczony,
+  wagon odwrócony do góry nogami i wagon Konduktora z bossem), wypatruje anomalii i niszczy je laserem. Gdy anomalia zdąży go dopaść,
+  zaczyna ten wagon od początku. Trzy poziomy trudności, tryb łagodny bez straszaków, sterowanie dotykowe, rekordy w `localStorage`.
+  Wagony, pasażerowie i światło są budowane kodem (`js/wagony.js`, `js/postacie.js`), duchy, panoramy za oknami i plakaty w `img/`
+  wygenerowane w Nano Banana 2.1, dźwięk syntezowany w Web Audio (`js/dzwiek.js`). `lib/three.js` to zminifikowana paczka Three.js 0.186
+  z dodatkami do post-processingu. Do testów: `?test&wagon=N` startuje od razu w wagonie N, a `window.__gra` steruje grą.

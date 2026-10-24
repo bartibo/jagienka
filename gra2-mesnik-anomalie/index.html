@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Meśnik: Anomalie – Gry Jagienki</title>
+  <meta name="description" content="Horror 3D w pociągu. Przejdź przez 10 wagonów ekspresu Meśnik, wypatruj anomalii i niszcz je laserem, zanim one dopadną ciebie.">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E👁️%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styl.css">
+</head>
+<body>
+  <canvas id="scena" aria-label="Widok z oczu postaci w pociągu"></canvas>
+
+  <!-- HUD w trakcie gry -->
+  <div id="hud" hidden>
+    <div class="hud-gora">
+      <div id="hud-wagon"></div>
+      <div id="hud-anomalie" aria-live="polite"></div>
+    </div>
+    <div id="celownik">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle class="pierscien" cx="32" cy="32" r="14"/>
+        <circle id="cieplo" class="cieplo" cx="32" cy="32" r="22" pathLength="100" stroke-dasharray="0 100"/>
+        <circle class="kropka" cx="32" cy="32" r="1.6"/>
+      </svg>
+    </div>
+    <div id="wskazniki"></div>
+    <div id="boss" hidden><span>KONDUKTOR</span><div class="pasek"><i id="boss-zycie"></i></div></div>
+    <div id="napisy"></div>
+    <div id="komunikat"></div>
+    <div id="podpowiedz"></div>
+    <div id="tytul-wagonu"><small></small><b></b><span></span></div>
+    <button id="przycisk-pauzy" class="dotykowy" aria-label="Pauza">II</button>
+  </div>
+
+  <!-- Sterowanie dotykowe -->
+  <div id="dotyk" hidden>
+    <div id="joystick"><i></i></div>
+    <button id="d-strzal" aria-label="Strzał laserem">⚡</button>
+    <button id="d-latarka" aria-label="Latarka">🔦</button>
+  </div>
+
+  <div id="straszak" aria-hidden="true"><img alt=""></div>
+  <div id="biel" aria-hidden="true"></div>
+
+  <!-- Menu główne -->
+  <section id="menu" class="ekran">
+    <div class="tlo-menu"></div>
+    <div class="menu-tresc">
+      <a class="powrot" href="../" title="Wszystkie gry Jagienki">‹ Gry</a>
+      <h1 class="tytul"><span class="maly">ekspres</span><span class="glitch" data-t="MEŚNIK">MEŚNIK</span><span class="pod">ANOMALIE</span></h1>
+      <p class="zajawka">10 wagonów. Pasażerowie siedzą spokojnie. Ale niektórzy z nich nie są ludźmi.</p>
+      <div id="ladowanie"><i></i></div>
+      <div class="przyciski">
+        <button id="b-start" class="duzy" disabled>Wsiadaj</button>
+        <button id="b-kontynuuj" hidden>Kontynuuj</button>
+        <button id="b-jak">Jak grać</button>
+        <button id="b-ustawienia">Ustawienia</button>
+      </div>
+      <p id="rekord"></p>
+    </div>
+  </section>
+
+  <section id="jak" class="ekran okno" hidden>
+    <div class="karta">
+      <h2>Jak grać</h2>
+      <ul>
+        <li><b>Idź naprzód</b> przez kolejne wagony aż do lokomotywy.</li>
+        <li>Co jakiś czas pojawiają się <b>anomalie</b> – rozmyte duchy, potwory, a czasem… pasażer, który nagle wygląda inaczej.</li>
+        <li><b>Wypatrz anomalię i strzel do niej laserem</b>. Każda ma swój czas – im dłużej czeka, tym głośniej szepcze i tym bardziej śnieży obraz.</li>
+        <li>Jeśli nie zdążysz, anomalia cię dopadnie i <b>zaczynasz ten wagon od początku</b>.</li>
+        <li>Drzwi do następnego wagonu otwierają się dopiero, gdy zniszczysz wszystkie anomalie w wagonie (licznik nad drzwiami).</li>
+        <li>Nie strzelaj do zwykłych pasażerów – laser się przegrzeje.</li>
+      </ul>
+      <div class="klawisze">
+        <span><kbd>W A S D</kbd> chodzenie</span>
+        <span><kbd>mysz</kbd> rozglądanie się</span>
+        <span><kbd>lewy przycisk</kbd> laser</span>
+        <span><kbd>Shift</kbd> szybciej</span>
+        <span><kbd>F</kbd> latarka</span>
+        <span><kbd>Esc</kbd> pauza</span>
+      </div>
+      <p class="maly-tekst">Na telefonie i tablecie: lewy kciuk – chodzenie, przeciąganie po prawej – rozglądanie się, ⚡ – laser.</p>
+      <button class="zamknij">Rozumiem</button>
+    </div>
+  </section>
+
+  <section id="ustawienia" class="ekran okno" hidden>
+    <div class="karta">
+      <h2>Ustawienia</h2>
+      <fieldset class="wybor" id="u-trudnosc">
+        <legend>Poziom trudności</legend>
+        <label><input type="radio" name="trudnosc" value="latwy"> <span>Łatwy<small>więcej czasu na anomalie</small></span></label>
+        <label><input type="radio" name="trudnosc" value="normalny"> <span>Normalny</span></label>
+        <label><input type="radio" name="trudnosc" value="koszmar"> <span>Koszmar<small>mało czasu, twardy Konduktor</small></span></label>
+      </fieldset>
+      <label class="suwak">Czułość myszy <input type="range" id="u-czulosc" min="0.3" max="2.5" step="0.1"></label>
+      <label class="suwak">Głośność <input type="range" id="u-glosnosc" min="0" max="1" step="0.05"></label>
+      <label class="przelacznik"><input type="checkbox" id="u-lagodny"> Tryb łagodny <small>bez strasznej twarzy i krzyku, gdy anomalia cię dopadnie</small></label>
+      <label class="przelacznik"><input type="checkbox" id="u-jakosc"> Wysoka jakość grafiki <small>poświata, wygładzanie krawędzi</small></label>
+      <button class="zamknij">Gotowe</button>
+    </div>
+  </section>
+
+  <section id="pauza" class="ekran okno" hidden>
+    <div class="karta">
+      <h2>Pauza</h2>
+      <div class="przyciski pionowo">
+        <button id="p-wroc" class="duzy">Wróć do gry</button>
+        <button id="p-od-nowa">Zacznij ten wagon od nowa</button>
+        <button id="p-ustawienia">Ustawienia</button>
+        <button id="p-menu">Wyjdź do menu</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="koniec" class="ekran okno" hidden>
+    <div class="karta">
+      <h2 class="zielony">Stacja końcowa</h2>
+      <p id="k-tekst"></p>
+      <dl id="k-staty"></dl>
+      <p id="k-ranga"></p>
+      <div class="przyciski">
+        <button id="k-znowu" class="duzy">Jeszcze raz</button>
+        <button id="k-menu">Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <noscript><p class="bez-js">Ta gra potrzebuje JavaScriptu.</p></noscript>
+  <script type="module" src="js/gra.js"></script>
+</body>
+</html>
