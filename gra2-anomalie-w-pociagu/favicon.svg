@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><radialGradient id="i" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7a5a"/><stop offset=".6" stop-color="#e01a10"/><stop offset="1" stop-color="#5a0505"/></radialGradient></defs>
+  <rect width="64" height="64" rx="14" fill="#07090b"/>
+  <path d="M5 32Q32 8 59 32 32 56 5 32z" fill="#5ff2ff" opacity=".55" transform="translate(-2.5 0)"/>
+  <path d="M5 32Q32 8 59 32 32 56 5 32z" fill="#eef3f2"/>
+  <circle cx="32" cy="32" r="12.5" fill="url(#i)"/>
+  <ellipse cx="32" cy="32" rx="3.2" ry="9" fill="#050505"/>
+  <circle cx="36.5" cy="27" r="2.4" fill="#fff" opacity=".85"/>
+  <rect x="0" y="44" width="64" height="3" fill="#5ff2ff" opacity=".7"/>
+  <rect x="10" y="18" width="20" height="2" fill="#ff3b2f" opacity=".7"/>
+</svg>

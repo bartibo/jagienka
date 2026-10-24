@@ -15,7 +15,7 @@ export const WAGONY = [
     swiatlo: { kolor: 0xfff3dc, moc: 3.6, otoczenie: 0.55, mruganie: 0.02 }, obsadzenie: 0.45,
     sciany: '#d9d2bf', podloga: ['#5d6266', '#474c50'], tkanina: '#ffffff',
     anomalie: { ile: 2, naraz: 1, czas: 11, typy: ['zjawa', 'zjawa'] }, groza: 0,
-    komunikat: 'Witamy w ekspresie Meśnik. Życzymy spokojnej podróży.',
+    komunikat: 'Witamy w pociągu. Życzymy spokojnej podróży.',
   },
   {
     nazwa: 'Wagon z przedziałami', opis: 'Nie zaglądaj do przedziałów. Albo zaglądaj.', uklad: 'przedzialy', pora: 'dzien',
@@ -219,7 +219,7 @@ export class Wagon {
     // Plakaty na ścianie czołowej (od strony wejścia widać przednią).
     if (u !== 'bagazowy') {
       const zly = this.nr >= 5;
-      const pl = [['plakat-gory.jpg', 'TATRY', 'Jedź z nami ekspresem Meśnik'], ['plakat-morze.jpg', 'BAŁTYK', 'Koleje Meśnik zapraszają']];
+      const pl = [['plakat-gory.jpg', 'TATRY', 'Jedź z nami nocnym pociągiem'], ['plakat-morze.jpg', 'BAŁTYK', 'Koleje Jagienki zapraszają']];
       if (zly) pl[0] = ['plakat-zly.jpg', 'TATRY', 'Jedź z nami. Zostań z nami.'];
       pl.forEach(([n, a, b], i) => {
         const tex = plakat(n, a, b);

@@ -1,4 +1,4 @@
-// Meśnik: Anomalie – pętla gry: silnik, gracz z laserem, wagony po kolei, anomalie, HUD, menu i sterowanie.
+// Jagienka: anomalie w pociągu – pętla gry: silnik, gracz z laserem, wagony po kolei, anomalie, HUD, menu i sterowanie.
 import * as THREE from '../lib/three.js';
 import { $, generator, pamiec, ogranicz } from './narzedzia.js';
 import { wczytajWszystko, plotno, teksturaZ } from './tekstury.js';
@@ -590,7 +590,7 @@ function koniecGry() {
   staty.czas = (performance.now() - staty.start) / 1000;
   $('#biel').classList.add('pokaz');
   dzwiek.ciszaSzeptow(); dzwiek.gong();
-  setTimeout(() => powiedz('Stacja końcowa. Dziękujemy za podróż ekspresem Meśnik.'), 1200);
+  setTimeout(() => powiedz('Stacja końcowa. Dziękujemy za wspólną podróż.'), 1200);
   document.exitPointerLock?.();
   const min = Math.floor(staty.czas / 60), sek = Math.round(staty.czas % 60);
   const celnosc = staty.strzaly ? Math.round(staty.trafienia / staty.strzaly * 100) : 0;

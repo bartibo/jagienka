@@ -61,12 +61,12 @@ button:disabled { opacity: 0.4; cursor: wait; }
 .powrot:hover { color: #fff; }
 .tytul { margin: 0 0 14px; line-height: 0.9; display: flex; flex-direction: column; }
 .tytul .maly { font-size: 1rem; letter-spacing: 0.5em; color: var(--przygaszony); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
-.tytul .glitch { position: relative; font-family: var(--glitch); font-weight: 400; font-size: clamp(3.4rem, 13vw, 7.2rem); color: #f2f2ee; text-shadow: 0 0 24px rgba(255, 59, 47, 0.35); }
+.tytul .glitch { position: relative; font-family: var(--glitch); font-weight: 400; font-size: clamp(3rem, 11vw, 6.4rem); color: #f2f2ee; text-shadow: 0 0 24px rgba(255, 59, 47, 0.35); }
 .tytul .glitch::before, .tytul .glitch::after { content: attr(data-t); position: absolute; inset: 0; }
 .tytul .glitch::before { color: var(--cyjan); mix-blend-mode: screen; animation: drgaj 2.6s infinite steps(2); clip-path: inset(0 0 55% 0); }
 .tytul .glitch::after { color: var(--czerwony); mix-blend-mode: screen; animation: drgaj 1.9s infinite reverse steps(2); clip-path: inset(50% 0 0 0); }
 @keyframes drgaj { 0%, 86%, 100% { transform: none; } 88% { transform: translate(-6px, 1px); } 92% { transform: translate(5px, -2px); } 96% { transform: translate(-2px, 0); } }
-.tytul .pod { font-size: clamp(1.4rem, 5vw, 2.2rem); letter-spacing: 0.62em; color: var(--czerwony); font-weight: 700; margin-top: 6px; text-shadow: 0 0 18px rgba(255, 59, 47, 0.6); }
+.tytul .pod { font-size: clamp(1.3rem, 4.6vw, 2.1rem); letter-spacing: 0.5em; color: var(--czerwony); font-weight: 700; margin-top: 6px; text-shadow: 0 0 18px rgba(255, 59, 47, 0.6); }
 .zajawka { color: #c8d2cc; font-size: 1.02rem; line-height: 1.5; margin: 0 0 18px; max-width: 30em; }
 #ladowanie { height: 3px; background: rgba(255,255,255,.1); width: 260px; max-width: 100%; }
 #ladowanie i { display: block; height: 100%; width: 0; background: var(--cyjan); box-shadow: 0 0 10px var(--cyjan); transition: width 0.2s; }
