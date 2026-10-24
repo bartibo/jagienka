@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Studio Mody – Gry Jagienki</title>
+  <meta name="description" content="Stwórz własną postać, ubierz ją w setki strojów, zrób makijaż i halloweenowe przebranie. Zapisz ją i pobierz jako obrazek.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E👗%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styl.css">
+</head>
+<body>
+  <header class="pasek">
+    <a class="powrot" href="../" title="Wszystkie gry Jagienki">‹ Gry</a>
+    <h1>Studio <span>Mody</span> <i aria-hidden="true">✨</i></h1>
+    <nav class="akcje" aria-label="Akcje">
+      <button data-akcja="pomysly" class="przycisk mocny" title="Gotowe stylizacje do przerobienia"><b>💡</b><span>Pomysły</span></button>
+      <button data-akcja="losuj" class="przycisk" title="Wylosuj cały strój"><b>🎲</b><span>Losuj</span></button>
+      <button data-akcja="halloween" class="przycisk dyniowy" title="Wylosuj przebranie na Halloween"><b>🎃</b><span>Halloween</span></button>
+      <button data-akcja="wyzwanie" class="przycisk zloty" title="Wyzwanie z jury"><b>🏆</b><span>Wyzwanie</span></button>
+      <button data-akcja="odznaki" class="przycisk" title="Twoje odznaki"><b>🎖️</b><span>Odznaki</span></button>
+      <button data-akcja="cofnij" class="przycisk maly" title="Cofnij (Ctrl+Z)" aria-label="Cofnij"><b>↶</b></button>
+      <button data-akcja="ponow" class="przycisk maly" title="Ponów (Ctrl+Y)" aria-label="Ponów"><b>↷</b></button>
+      <button data-akcja="dzwiek" class="przycisk maly" title="Dźwięk" aria-label="Dźwięk"><b id="ikona-dzwieku">🔊</b></button>
+    </nav>
+  </header>
+
+  <main class="studio">
+    <section class="kolumna-sceny">
+      <div class="wyzwanie-pasek" id="wyzwanie-pasek" hidden></div>
+      <div class="scena" id="scena">
+        <div class="tlo" id="tlo"></div>
+        <div class="postac" id="postac"></div>
+        <div class="flesze" aria-hidden="true"></div>
+      </div>
+      <div class="pod-scena">
+        <label class="imie"><span>✏️</span><input id="imie" maxlength="24" placeholder="Imię postaci" autocomplete="off"></label>
+        <div class="zapis">
+          <button data-akcja="zapisz" class="przycisk mocny" title="Zapisz w galerii"><b>💾</b><span>Zapisz</span></button>
+          <button data-akcja="galeria" class="przycisk" title="Moje postacie"><b>🖼️</b><span>Galeria</span></button>
+          <button data-akcja="png" class="przycisk" title="Obrazek PNG z przezroczystym tłem"><b>⬇️</b><span>PNG</span></button>
+          <button data-akcja="jpg" class="przycisk" title="Obrazek JPG z tłem"><b>⬇️</b><span>JPG</span></button>
+          <button data-akcja="jury" class="przycisk zloty" title="Pokaż stylizację jury"><b>⭐</b><span>Jury</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Garderoba">
+      <nav class="grupy" id="grupy"></nav>
+      <nav class="kategorie" id="kategorie"></nav>
+      <div class="przewijane" id="przewijane">
+        <p class="uwaga" id="uwaga" hidden></p>
+        <div class="elementy" id="elementy"></div>
+        <div class="kolory" id="kolory"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="okno"><div class="okno-tresc" id="okno-tresc"></div></dialog>
+  <div class="dymek" id="dymek" role="status" aria-live="polite"></div>
+  <canvas class="konfetti" id="konfetti" aria-hidden="true"></canvas>
+
+  <script type="module" src="js/gra.js"></script>
+</body>
+</html>
