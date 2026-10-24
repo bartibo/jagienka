@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ostatni Ocalały: Martwa Osada 3D</title>
+    <meta name="description" content="Strzelanka 3D w przeglądarce: przetrwaj kolejne dni i noce w opuszczonej osadzie pełnej zombie.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%9F%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="styl.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+    <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" crossorigin>
+</head>
+<body class="text-white relative">
+
+    <!-- Główny Canvas 3D WebGL -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Filmowa winieta i krwawy ekran -->
+    <div id="cinematic-vignette" class="fixed inset-0 z-10"></div>
+    <div id="blood-overlay" class="fixed inset-0 z-10"></div>
+
+    <!-- Siatka lunety snajperskiej (.50 BMG pod PPM) -->
+    <div id="sniper-scope" class="fixed inset-0 z-[15] hidden flex items-center justify-center">
+        <div class="w-full h-px bg-red-500/70 absolute"></div>
+        <div class="h-full w-px bg-red-500/70 absolute"></div>
+        <div class="w-3 h-3 rounded-full border-2 border-red-500 bg-red-500/30"></div>
+        <div class="absolute bottom-14 text-xs font-bold tracking-widest text-emerald-400 uppercase bg-black/80 px-3 py-1 rounded">
+            OPTICAL ZOOM 8X • BARRETT .50 BMG
+        </div>
+    </div>
+
+    <!-- Powiadomienia na ekranie (Poziom Dzień/Noc, Headshot, Znaleziony Łup w domku) -->
+    <div id="floating-notifications" class="fixed inset-0 pointer-events-none z-20 flex flex-col items-center justify-center">
+        <div id="level-banner" class="font-teko text-5xl md:text-7xl tracking-widest text-amber-400 uppercase opacity-0 transition-all duration-700 transform scale-75 drop-shadow-[0_5px_25px_rgba(0,0,0,0.98)] text-center px-4">
+            POZIOM 1 • SŁONECZNY DZIEŃ ☀️
+        </div>
+        <div id="level-subbanner" class="text-sm md:text-lg font-bold tracking-widest text-stone-200 uppercase opacity-0 transition-all duration-700 bg-stone-950/85 px-5 py-1.5 rounded-full border border-stone-700 mt-1 shadow-2xl">
+            Pokonaj wszystkie zombiaki, zanim zapadnie zmrok!
+        </div>
+        <div id="headshot-popup" class="mt-16 font-teko text-3xl tracking-wider text-amber-400 uppercase opacity-0 transition-opacity duration-200 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+            STRZAŁ W GŁOWĘ! +$40
+        </div>
+        <div id="loot-popup" class="mt-24 bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 px-5 py-1.5 rounded-full text-sm font-bold tracking-wider uppercase opacity-0 transition-opacity duration-300 shadow-xl">
+            ZNALEZIONO ZAOPATRZENIE W DOMU!
+        </div>
+        <div id="interact-prompt" class="mt-4 hidden bg-stone-950/90 border border-amber-400/80 text-amber-300 px-4 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase shadow-xl">
+            Naciśnij [E] lub podejdź bliżej, aby podnieść zaopatrzenie ze stołu
+        </div>
+    </div>
+
+    <!-- Celownik (Crosshair) -->
+    <div id="crosshair" class="fixed inset-0 pointer-events-none z-20 flex items-center justify-center">
+        <div class="relative flex items-center justify-center">
+            <div id="ch-dot" class="w-1 h-1 bg-white rounded-full opacity-90 shadow"></div>
+            <div id="ch-top" class="crosshair-line w-0.5 h-3" style="transform: translateY(-10px);"></div>
+            <div id="ch-bottom" class="crosshair-line w-0.5 h-3" style="transform: translateY(10px);"></div>
+            <div id="ch-left" class="crosshair-line h-0.5 w-3" style="transform: translateX(-10px);"></div>
+            <div id="ch-right" class="crosshair-line h-0.5 w-3" style="transform: translateX(10px);"></div>
+            <!-- Hitmarker (X przy trafieniu) -->
+            <div id="hm-1" class="hit-marker" style="transform: rotate(45deg);"></div>
+            <div id="hm-2" class="hit-marker" style="transform: rotate(-45deg);"></div>
+        </div>
+    </div>
+
+    <!-- HUD (Interfejs Gracza) -->
+    <div id="hud" class="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 md:p-5">
+
+        <!-- Górny Pasek: Poziom (Dzień/Noc), Pozostałe Zombie, Lokalizacja, Pieniądze i Sklepik -->
+        <div class="flex flex-wrap justify-between items-start gap-2.5">
+            <!-- Statystyki Poziomu -->
+            <div class="bg-stone-950/90 border-l-4 border-red-600 px-4 py-2 rounded-r-xl backdrop-blur-md shadow-2xl flex items-center gap-4 border-t border-r border-b border-stone-800">
+                <div>
+                    <div class="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Poziom</div>
+                    <div id="hud-level" class="font-teko text-4xl md:text-5xl text-red-500 leading-none mt-0.5">1</div>
+                </div>
+                <div class="h-9 w-px bg-stone-800"></div>
+                <div>
+                    <div class="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Pozostałe Zombie</div>
+                    <div id="hud-zombies" class="font-teko text-4xl md:text-5xl text-stone-100 leading-none mt-0.5">0</div>
+                </div>
+                <div class="h-9 w-px bg-stone-800"></div>
+                <div>
+                    <div class="text-[10px] text-stone-400 uppercase tracking-widest font-semibold">Pokonani</div>
+                    <div id="hud-kills" class="font-teko text-4xl md:text-5xl text-stone-300 leading-none mt-0.5">0</div>
+                </div>
+            </div>
+
+            <!-- Środkowy Panel: Pora Dnia przypisana do Poziomu + Lokalizacja -->
+            <div class="bg-stone-950/90 border border-stone-800 px-4 py-2 rounded-xl backdrop-blur-md shadow-2xl flex items-center gap-4">
+                <div class="flex items-center gap-2.5">
+                    <div id="time-icon" class="text-2xl md:text-3xl">☀️</div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="hud-phase-title" class="font-teko text-2xl md:text-3xl text-amber-400 leading-none tracking-wider">POZIOM 1: DZIEŃ</span>
+                            <span id="hud-next-phase" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60">Następny: 🌙 NOC (Poz. 2)</span>
+                        </div>
+                        <div id="hud-time-desc" class="text-[11px] text-stone-400">Dobra widoczność • Przeszukuj 5 domków i zbieraj zapasy</div>
+                    </div>
+                </div>
+                <div class="h-8 w-px bg-stone-800 hidden lg:block"></div>
+                <div class="hidden lg:block">
+                    <div class="text-[10px] text-stone-400 uppercase tracking-wider">Lokalizacja (Tylko Ty)</div>
+                    <div id="hud-location" class="text-xs font-bold text-emerald-400 uppercase tracking-wide">🌲 Na zewnątrz (Osada)</div>
+                </div>
+            </div>
+
+            <!-- Kasa i Przyciski Sklepiku -->
+            <div class="flex flex-col items-end gap-1.5">
+                <div class="bg-stone-950/90 border-r-4 border-emerald-500 px-5 py-1.5 rounded-l-xl backdrop-blur-md shadow-2xl flex items-center gap-2 border-t border-l border-b border-stone-800">
+                    <span class="text-emerald-400 font-teko text-4xl md:text-5xl leading-none">$</span>
+                    <span id="hud-cash" class="font-teko text-4xl md:text-5xl text-white leading-none tracking-wide">200</span>
+                </div>
+                <div class="bg-stone-900/95 border border-stone-700 px-2.5 py-1 rounded-lg text-[11px] text-stone-200 flex flex-wrap items-center gap-1.5 shadow-lg pointer-events-auto">
+                    <button data-akcja="sklep" class="px-2.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded cursor-pointer shadow">🛒 [B] SKLEPIK BRONI</button>
+                    <button data-akcja="latarka" class="px-2 py-0.5 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded cursor-pointer">🔦 [F] Latarka</button>
+                    <button data-akcja="pauza" class="px-2 py-0.5 bg-red-900/80 hover:bg-red-800 text-red-200 font-bold rounded cursor-pointer">[P] Pauza</button>
+                </div>
+                <div id="fps-counter" class="hidden text-[11px] font-bold text-emerald-300 bg-black/70 px-2 py-0.5 rounded"></div>
+            </div>
+        </div>
+
+        <!-- Panel ukończenia poziomu / przejścia między Dniem a Nocą (widoczny po wybiciu fali) -->
+        <div id="between-levels-box" class="hidden self-center pointer-events-auto bg-stone-950/95 border-2 border-amber-500/90 rounded-2xl p-5 max-w-xl w-full text-center shadow-[0_0_50px_rgba(245,158,11,0.35)] backdrop-blur-md my-auto">
+            <div id="bl-badge" class="inline-block px-3 py-0.5 bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-bold uppercase tracking-widest rounded-full mb-1">
+                POZIOM UKOŃCZONY! NAGRODA +$150
+            </div>
+            <h3 id="bl-title" class="font-teko text-4xl md:text-5xl text-white tracking-wider uppercase leading-none mb-1">
+                ZAPADA ZMROK... NADCHODZI POZIOM 2 (NOC 🌙)
+            </h3>
+            <p id="bl-desc" class="text-stone-300 text-xs md:text-sm mb-4">
+                Wszystkie zombiaki z tego poziomu zostały pokonane! W domkach pojawiły się nowe apteczki i amunicja. Kup lepszą broń w Sklepiku i rozpocznij kolejny poziom, gdy będziesz gotowa.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button data-akcja="sklep" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-teko text-2xl tracking-wider uppercase rounded-xl font-bold shadow-lg transition transform hover:scale-105 cursor-pointer">
+                    🛒 OTWÓRZ SKLEPIK BRONI [B]
+                </button>
+                <button data-akcja="nastepny-poziom" class="px-7 py-2.5 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-teko text-2xl tracking-wider uppercase rounded-xl font-bold shadow-lg transition transform hover:scale-105 cursor-pointer">
+                    ⚔️ ROZPOCZNIJ KOLEJNY POZIOM [N]
+                </button>
+            </div>
+        </div>
+
+        <!-- Komunikat o przeładowaniu na środku u dołu -->
+        <div class="self-center mb-2 flex flex-col items-center gap-1.5">
+            <div id="reload-prompt" class="hidden bg-red-950/90 border border-red-500 text-red-200 px-4 py-1 rounded-lg font-bold tracking-wider uppercase text-xs animate-bounce shadow-lg">
+                Naciśnij [R] aby przeładować broń!
+            </div>
+        </div>
+
+        <!-- Dolny Pasek: Zdrowie, Pancerz, Kondycja oraz 7 Slotów Broni i Licznik Amunicji -->
+        <div class="flex flex-col lg:flex-row justify-between items-end gap-3">
+
+            <!-- Paski Zdrowia, Pancerza i Kondycji -->
+            <div class="bg-stone-950/90 border border-stone-800 p-3 rounded-xl backdrop-blur-md shadow-2xl w-full lg:w-80 space-y-2">
+                <div>
+                    <div class="flex justify-between text-xs uppercase font-bold tracking-wider mb-1">
+                        <span class="text-red-400 flex items-center gap-1">✚ Zdrowie (HP)</span>
+                        <span id="hud-hp-text" class="text-white">100 / 100</span>
+                    </div>
+                    <div class="w-full h-3 bg-stone-900 rounded-full overflow-hidden border border-stone-800 p-0.5">
+                        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-red-800 via-red-600 to-rose-400 rounded-full transition-all duration-200" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs uppercase font-bold tracking-wider mb-1">
+                        <span class="text-sky-400 flex items-center gap-1">🛡 Kamizelka Kuloodporna</span>
+                        <span id="hud-armor-text" class="text-white">40 / 100</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-stone-900 rounded-full overflow-hidden border border-stone-800 p-0.5">
+                        <div id="hud-armor-bar" class="h-full bg-gradient-to-r from-blue-700 to-sky-400 rounded-full transition-all duration-200" style="width: 40%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs uppercase font-bold tracking-wider mb-1">
+                        <span class="text-amber-400 flex items-center gap-1">⚡ Kondycja [SHIFT]</span>
+                        <span id="hud-stamina-text" class="text-stone-300">100%</span>
+                    </div>
+                    <div class="w-full h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
+                        <div id="hud-stamina-bar" class="h-full bg-amber-400" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pasek 7 Broni (Klawisze 1-7) oraz Licznik Amunicji -->
+            <div class="flex flex-col items-end gap-2 w-full lg:w-auto">
+                <div id="weapon-slots-bar" class="flex flex-wrap justify-end gap-1.5 pointer-events-auto">
+                    <!-- Generowane dynamicznie w JS -->
+                </div>
+                <div class="bg-stone-950/90 border border-stone-800 px-5 py-2 rounded-xl backdrop-blur-md shadow-2xl flex items-center justify-between gap-6 min-w-[270px]">
+                    <div>
+                        <div id="hud-weapon-name" class="text-xs text-amber-400 uppercase font-extrabold tracking-widest">1. GLOCK 19 (9MM)</div>
+                        <div id="hud-reload-state" class="text-[11px] text-stone-400 uppercase">Gotowy • [PPM] Celownik</div>
+                    </div>
+                    <div class="flex items-baseline gap-1 font-teko">
+                        <span id="hud-ammo-mag" class="text-5xl text-white leading-none">15</span>
+                        <span class="text-3xl text-stone-500 leading-none">/</span>
+                        <span id="hud-ammo-res" class="text-4xl text-stone-400 leading-none">∞</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL: SKLEPIK Z BRONIAMI I ZAOPATRZENIEM (Klawisz B lub przycisk na ekranie) -->
+    <div id="shop-modal" class="fixed inset-0 z-40 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 md:p-6">
+        <div class="bg-stone-950 border-2 border-amber-500/80 rounded-2xl max-w-5xl w-full p-5 md:p-7 shadow-[0_0_60px_rgba(245,158,11,0.28)] max-h-[92vh] overflow-y-auto flex flex-col justify-between">
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-800 pb-4 mb-4 gap-3">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-widest text-amber-400">Zbrojownia Przetrwania • Klawisze [1-7]</div>
+                    <h2 class="font-teko text-4xl md:text-5xl text-white tracking-wider leading-none uppercase">
+                        🛒 SKLEPIK BRONI I WYPOSAŻENIA
+                    </h2>
+                    <p class="text-stone-400 text-xs md:text-sm">Kupuj coraz potężniejsze bronie za zarobione dolary ($). Kliknij posiadaną broń, aby od razu wziąć ją do ręki lub dokupić do niej naboje.</p>
+                </div>
+                <div class="flex items-center gap-3 self-end sm:self-center">
+                    <div class="bg-emerald-950/80 border-2 border-emerald-500/70 px-5 py-1.5 rounded-xl flex items-center gap-2 shadow-lg">
+                        <span class="text-xs text-emerald-300 uppercase font-bold">Twoje Pieniądze:</span>
+                        <span class="font-teko text-4xl text-emerald-400 leading-none">$<span id="shop-cash">200</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-2 flex items-center justify-between">
+                    <span>🔫 ARSENAŁ BRONI PALNEJ (OD PISTOLETU DO MINIGUNA M249 SAW)</span>
+                    <span class="text-stone-400 font-normal">Każda broń ma unikalny model 3D i siłę ognia</span>
+                </div>
+                <div id="shop-weapons-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                    <!-- Kafelki broni generowane dynamicznie w JS -->
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="text-xs font-extrabold uppercase tracking-wider text-sky-400 mb-2">
+                    🧰 ZAOPATRZENIE TAKTYCZNE, AMUNICJA I ULEPSZENIA
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="bg-stone-900/90 border border-stone-800 hover:border-red-500/60 rounded-xl p-3.5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-red-400 font-bold text-sm">✚ Apteczka Pierwszej Pomocy</span>
+                                <span class="bg-red-950 text-red-300 text-[10px] px-2 py-0.5 rounded font-bold">+65 HP</span>
+                            </div>
+                            <p class="text-stone-400 text-xs mb-3">Natychmiast leczy rany i przywraca 65 punktów zdrowia.</p>
+                        </div>
+                        <button data-akcja="kup" data-co="medkit" class="w-full py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg text-xs transition flex justify-between px-3 items-center cursor-pointer">
+                            <span>KUP APTECZKĘ</span>
+                            <span class="font-teko text-2xl leading-none">$70</span>
+                        </button>
+                    </div>
+                    <div class="bg-stone-900/90 border border-stone-800 hover:border-sky-500/60 rounded-xl p-3.5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sky-400 font-bold text-sm">🛡 Kamizelka Kevlarowa</span>
+                                <span class="bg-sky-950 text-sky-300 text-[10px] px-2 py-0.5 rounded font-bold">100 Pancerza</span>
+                            </div>
+                            <p class="text-stone-400 text-xs mb-3">Odnawia pancerz do 100 pkt. Pochłania 65% obrażeń od zombie.</p>
+                        </div>
+                        <button data-akcja="kup" data-co="armor" class="w-full py-2 bg-sky-700 hover:bg-sky-600 text-white font-bold rounded-lg text-xs transition flex justify-between px-3 items-center cursor-pointer">
+                            <span>KUP PANCERZ</span>
+                            <span class="font-teko text-2xl leading-none">$95</span>
+                        </button>
+                    </div>
+                    <div class="bg-stone-900/90 border border-stone-800 hover:border-amber-500/60 rounded-xl p-3.5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-amber-400 font-bold text-sm">📦 Duża Skrzynia Amunicji</span>
+                                <span class="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded font-bold">Wszystkie bronie</span>
+                            </div>
+                            <p class="text-stone-400 text-xs mb-3">Uzupełnia zapas magazynków do wszystkich posiadanych broni.</p>
+                        </div>
+                        <button data-akcja="kup" data-co="all_ammo" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-black font-extrabold rounded-lg text-xs transition flex justify-between px-3 items-center cursor-pointer">
+                            <span>KUP ZAPAS NABOI</span>
+                            <span class="font-teko text-2xl leading-none">$110</span>
+                        </button>
+                    </div>
+                    <div class="bg-stone-900/90 border border-stone-800 hover:border-purple-500/60 rounded-xl p-3.5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-purple-400 font-bold text-sm">☠ Ulepszenie Siły Ognia</span>
+                                <span id="upg-dmg-lvl" class="bg-purple-950 text-purple-300 text-[10px] px-2 py-0.5 rounded font-bold">Poz. 1</span>
+                            </div>
+                            <p class="text-stone-400 text-xs mb-3">Trwale zwiększa obrażenia każdej Twojej broni o +20%.</p>
+                        </div>
+                        <button data-akcja="kup" data-co="dmg_upgrade" class="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-lg text-xs transition flex justify-between px-3 items-center cursor-pointer">
+                            <span>ULEPSZ BRONIE</span>
+                            <span id="upg-dmg-cost" class="font-teko text-2xl leading-none">$160</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="shop-feedback" class="text-center h-6 text-sm font-bold text-emerald-400 my-1"></div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2 border-t border-stone-800">
+                <button data-akcja="wroc-ze-sklepu" class="px-10 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-black font-teko text-3xl tracking-wider uppercase rounded-xl font-bold shadow-lg transition transform hover:scale-105 cursor-pointer">
+                    WRÓĆ DO GRY I WALCZ DALEJ
+                </button>
+                <button id="shop-next-level-btn" data-akcja="nastepny-poziom" class="hidden px-10 py-2.5 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-teko text-3xl tracking-wider uppercase rounded-xl font-bold shadow-lg transition transform hover:scale-105 cursor-pointer">
+                    ⚔️ ROZPOCZNIJ NASTĘPNY POZIOM TERAZ!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EKRAN STARTOWY / PAUZY -->
+    <div id="start-screen" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="max-w-2xl w-full bg-stone-950/95 border-2 border-red-900/80 rounded-2xl p-6 md:p-8 text-center shadow-[0_0_80px_rgba(185,28,28,0.35)] relative overflow-hidden my-auto">
+            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-red-600 to-indigo-900"></div>
+            <a href="../" class="absolute top-4 left-4 text-xs text-stone-400 hover:text-amber-300 font-bold">← Gry Jagienki</a>
+
+            <div class="inline-block px-3 py-1 bg-red-950 border border-red-700 text-amber-300 text-xs font-bold uppercase tracking-widest rounded-full mb-2 mt-3">
+                Poziom 1: Dzień ☀️ • Poziom 2: Noc 🌙 • Poziom 3: Dzień ☀️ • 7 Broni w Sklepiku
+            </div>
+
+            <h1 class="font-teko text-5xl md:text-7xl text-white uppercase tracking-wider leading-none title-glow mb-2">
+                OSTATNI OCALAŁY: MARTWA OSADA
+            </h1>
+            <p class="text-stone-300 text-sm max-w-xl mx-auto mb-5">
+                Jesteś zupełnie sama w opuszczonej osadzie z pięcioma domkami. <strong>Pierwszy poziom rozgrywa się w słoneczny dzień</strong> – gdy pokonasz zombiaki, zapadnie <strong>noc i zacznie się poziom drugi</strong>, potem znów wstanie dzień na poziom trzeci! Zarabiaj pieniądze i kupuj coraz potężniejsze bronie w Sklepiku.
+            </p>
+
+            <!-- Instrukcja Sterowania -->
+            <div class="bg-stone-900/90 border border-stone-800 rounded-xl p-4 mb-4 text-left grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs md:text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-amber-400 font-bold rounded">W A S D</span>
+                    <span class="text-stone-300">Chodzenie (wchodź do domków!)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-amber-400 font-bold rounded">LPM / PPM</span>
+                    <span class="text-stone-300">Strzał / Celownik i Luneta (PPM)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-emerald-400 font-bold rounded">Klawisz [B]</span>
+                    <span class="text-stone-300">Otwórz Sklepik z 7 broniami</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-amber-400 font-bold rounded">Klawisze 1 - 7</span>
+                    <span class="text-stone-300">Wybór kupionej broni + [R] Przeładuj</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-amber-400 font-bold rounded">SPACJA / SHIFT</span>
+                    <span class="text-stone-300">Skok / Sprint</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-2 py-1 bg-stone-800 border border-stone-700 text-sky-400 font-bold rounded">[E] / [F]</span>
+                    <span class="text-stone-300">Podnieś łup w domku / Latarka</span>
+                </div>
+            </div>
+
+            <!-- Ustawienia grafiki i myszy -->
+            <div class="bg-stone-900/60 border border-stone-800 rounded-xl p-3 mb-5 text-left text-xs flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-stone-400 uppercase font-bold tracking-wider">Grafika:</span>
+                    <div id="quality-buttons" class="flex gap-1">
+                        <button data-akcja="jakosc" data-jakosc="auto" class="px-2 py-1 rounded border border-stone-700 bg-stone-800 text-stone-200 font-bold cursor-pointer">Auto</button>
+                        <button data-akcja="jakosc" data-jakosc="niska" class="px-2 py-1 rounded border border-stone-700 bg-stone-800 text-stone-200 font-bold cursor-pointer">Niska</button>
+                        <button data-akcja="jakosc" data-jakosc="srednia" class="px-2 py-1 rounded border border-stone-700 bg-stone-800 text-stone-200 font-bold cursor-pointer">Średnia</button>
+                        <button data-akcja="jakosc" data-jakosc="wysoka" class="px-2 py-1 rounded border border-stone-700 bg-stone-800 text-stone-200 font-bold cursor-pointer">Wysoka</button>
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 flex-1">
+                    <span class="text-stone-400 uppercase font-bold tracking-wider whitespace-nowrap">Czułość myszy:</span>
+                    <input id="sensitivity" type="range" min="0.3" max="2.5" step="0.1" value="1" class="flex-1 accent-amber-500">
+                </label>
+            </div>
+
+            <p id="touch-warning" class="hidden text-amber-300 text-xs mb-3">Ta gra potrzebuje klawiatury i myszki – najlepiej zagrać na komputerze.</p>
+
+            <button id="start-btn" disabled class="w-full py-4 bg-gradient-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:to-red-500 text-white font-teko text-4xl tracking-widest uppercase rounded-xl shadow-[0_0_25px_rgba(220,38,38,0.6)] transition transform hover:scale-[1.02] active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-wait disabled:hover:scale-100">
+                WCZYTYWANIE ŚWIATA...
+            </button>
+            <div class="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden mt-2">
+                <div id="load-bar" class="h-full bg-amber-500 transition-all duration-200" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EKRAN PRZEGRANEJ (GAME OVER) Z WYRAŹNYMI PRZYCISKAMI -->
+    <div id="gameover-screen" class="fixed inset-0 z-50 bg-red-950/90 backdrop-blur-lg hidden flex items-center justify-center p-4 pointer-events-auto">
+        <div class="max-w-xl w-full bg-stone-950 border-2 border-red-500 rounded-2xl p-7 md:p-8 text-center shadow-[0_0_100px_rgba(220,38,38,0.85)]">
+            <div class="inline-block px-3 py-1 bg-red-900/60 border border-red-500 text-red-200 text-xs font-bold uppercase tracking-widest rounded-full mb-2">
+                PORAŻKA • ZOMBIE CIĘ DOPADŁY
+            </div>
+            <h2 class="font-teko text-6xl md:text-7xl text-red-500 tracking-widest uppercase leading-none mb-2 title-glow">
+                PRZEGRAŁAŚ!
+            </h2>
+            <p class="text-stone-300 text-sm mb-6">
+                Twoje zdrowie spadło do zera. Możesz od razu powtórzyć ten sam poziom (zachowując kupione bronie!) albo rozpocząć całą przygodę od Poziomu 1.
+            </p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-900 border border-stone-800 rounded-xl p-4 mb-6">
+                <div>
+                    <div class="text-[11px] text-stone-400 uppercase">Osiągnięty Poziom</div>
+                    <div id="go-level" class="font-teko text-4xl text-white">1</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-stone-400 uppercase">Pora Dnia</div>
+                    <div id="go-phase" class="font-teko text-3xl text-amber-400">DZIEŃ ☀️</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-stone-400 uppercase">Pokonane Zombie</div>
+                    <div id="go-kills" class="font-teko text-4xl text-red-400">0</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-stone-400 uppercase">Strzały w Głowę</div>
+                    <div id="go-headshots" class="font-teko text-4xl text-emerald-400">0</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button data-akcja="powtorz" class="flex-1 py-4 bg-amber-500 hover:bg-amber-400 text-black font-teko text-3xl tracking-wider uppercase rounded-xl font-bold shadow-[0_0_25px_rgba(245,158,11,0.5)] transition transform hover:scale-105 cursor-pointer">
+                    🔄 POWTÓRZ TEN POZIOM (ZACHOWAJ BRONIE)
+                </button>
+                <button data-akcja="od-nowa" class="flex-1 py-4 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-teko text-3xl tracking-wider uppercase rounded-xl font-bold shadow-[0_0_25px_rgba(220,38,38,0.6)] transition transform hover:scale-105 cursor-pointer">
+                    ▶️ ZAGRAJ OD NOWA (POZIOM 1)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="webgl-error" class="hidden fixed inset-0 z-[60] bg-black flex items-center justify-center p-6 text-center">
+        <p class="text-stone-200 max-w-md">Twoja przeglądarka nie obsługuje grafiki 3D (WebGL 2). Spróbuj w aktualnym Chrome, Edge albo Firefox na komputerze.</p>
+    </div>
+
+    <script type="module" src="js/gra.js"></script>
+</body>
+</html>

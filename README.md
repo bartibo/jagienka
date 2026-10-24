@@ -28,3 +28,11 @@ Używaj w ścieżkach linków względnych (`img/obrazek.png`, a nie `/img/obraze
   Wagony, pasażerowie i światło są budowane kodem (`js/wagony.js`, `js/postacie.js`), duchy, panoramy za oknami i plakaty w `img/`
   wygenerowane w Nano Banana 2.1, dźwięk syntezowany w Web Audio (`js/dzwiek.js`). `lib/three.js` to zminifikowana paczka Three.js 0.186
   z dodatkami do post-processingu. Do testów: `?test&wagon=N` startuje od razu w wagonie N, a `window.__gra` steruje grą.
+- [`gra3-zombie/`](gra3-zombie/) – **Ostatni Ocalały: Martwa Osada**: strzelanka 3D (Three.js 0.170 z CDN jsDelivr, moduły ES w `js/`).
+  Poziomy na zmianę w dzień i w nocy, 5 domków do przeszukania, 7 broni w sklepiku, zombie wchodzą do domków przez drzwi.
+  Moduły: `stan.js` (stan gry, bronie, typy zombie), `grafika.js` (niebo, światła, cienie, postprocessing, presety jakości
+  Niska/Średnia/Wysoka z automatycznym wyborem), `swiat.js` (osada; nieruchoma geometria scalana według materiału),
+  `zombie.js` (zombie na kościach – jedno rysowanie na zombie), `bronie.js`, `efekty.js`, `hud.js`, `gra.js` (pętla i sterowanie).
+  Tekstury w `tekstury/` to skany CC0 z [Poly Haven](https://polyhaven.com) (1k, przekompresowane); reszta rysowana kodem.
+  `styl.css` to zbudowany Tailwind 3 (`tailwind/` – komenda przebudowy w `tailwind.config.js`).
+  `wersja-pierwsza.html` to pierwotna wersja gry w jednym pliku. Do testów: `?fps` pokazuje licznik klatek, `window.__gra` steruje grą.

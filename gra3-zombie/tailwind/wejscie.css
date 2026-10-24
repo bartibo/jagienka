@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #07090e;
+    font-family: 'Rajdhani', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+}
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+.font-teko {
+    font-family: 'Teko', sans-serif;
+}
+/* Krwawa winieta podczas otrzymywania obrażeń */
+#blood-overlay {
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255,0,0,0) 35%, rgba(165,0,0,0.68) 80%, rgba(95,0,0,0.96) 100%);
+    opacity: 0;
+    transition: opacity 0.18s ease-out;
+}
+/* Subtelna winieta filmowa (mocniejsza robi się w postprocessingu) */
+#cinematic-vignette {
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,0.35) 100%);
+}
+/* Luneta snajperska (widoczna przy celowaniu PPM snajperką .50 BMG) */
+#sniper-scope {
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(0,0,0,0) 32%, rgba(0,0,0,0.98) 36%, #000000 100%);
+}
+/* Celownik dynamiczny */
+.crosshair-line {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 0 3px rgba(0,0,0,0.95);
+}
+.hit-marker {
+    position: absolute;
+    width: 14px;
+    height: 2px;
+    background-color: #ef4444;
+    opacity: 0;
+    transition: opacity 0.08s ease-out;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 3px; }
+@keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 15px rgba(220, 38, 38, 0.7); }
+    50% { text-shadow: 0 0 32px rgba(239, 68, 68, 1), 0 0 12px rgba(255, 255, 255, 0.4); }
+}
+.title-glow { animation: pulse-glow 2.6s infinite; }
